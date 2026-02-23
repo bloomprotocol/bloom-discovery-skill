@@ -1,6 +1,6 @@
 ---
 name: bloom
-description: Bloom Taste Finder — discover your builder taste across 4 spectrums and get a personalized tool stack. For indie devs, vibe coders, and AI builders.
+description: Bloom Discovery — understand how you learn, decide, and build. Get a personalized builder profile + tool recommendations for the AI era.
 user-invocable: true
 command-dispatch: tool
 metadata: {"requires": {"bins": ["node", "npx"]}}
@@ -9,7 +9,7 @@ permissions:
   - network:external    # Connects to Bloom API for dashboard
 ---
 
-# Bloom Taste Finder
+# Bloom Discovery
 
 **Discover your builder taste—straight from your conversations.**
 
@@ -28,19 +28,20 @@ This skill requires the following permissions:
 
 Are you a Visionary who jumps on new tools early? An Explorer trying everything? A Cultivator building communities? An Optimizer fine-tuning workflows? Or an Innovator pushing boundaries?
 
-Find out in seconds with Bloom Taste Finder.
+Find out in seconds with Bloom Discovery.
 
 ## 🎯 What You Get
 
 Your personalized Bloom Identity Card reveals:
 
-- **🎴 Your Supporter Type** – Visionary, Explorer, Cultivator, Optimizer, or Innovator
-- **💬 Custom Tagline** – A one-liner that captures your vibe ("First to try new AI tools")
-- **📊 4 Taste Spectrums** – Learning, Decision, Novelty, Risk — see where you fall on each spectrum
-- **🏷️ Top Categories** – AI Tools, Productivity, Consumer Apps—where you spend your energy
-- **🎯 Tool Recommendations** – The top 5 tools matched to your profile
-- **🌱 Self-Growing Agent** – Your recommendations evolve as you interact (see below)
-- **🔗 Shareable Card** – Show off your supporter identity
+- **🎴 Personality Type** – Visionary, Explorer, Cultivator, Optimizer, or Innovator
+- **💬 Custom Tagline** – A one-liner that captures your style
+- **📊 4 Taste Spectrums** – Learning, Decision, Novelty, Risk (each 0-100)
+- **🔍 Hidden Pattern Insight** – Something about yourself you might not realize
+- **🧭 AI-Era Playbook** – Your leverage, blind spot, and next move for the AI era
+- **💪 Strengths** – Builder, Designer, Teacher, Analyst, etc.
+- **🎯 Tool Recommendations** – Matched from ClawHub, GitHub, and Claude Code
+- **🔗 Shareable Dashboard** – Your card at bloomprotocol.ai
 
 ## ⚡️ How It Works
 
@@ -100,10 +101,10 @@ Bloom **recommends skills but never installs them automatically**. You always de
 
 > Your agent grows by discovering more skills — not by installing them behind your back.
 
-## 🌟 Why Bloom Taste Finder?
+## 🌟 Why Bloom Discovery?
 
 **For Indie Devs & AI Builders:**
-Building something new? Bloom Taste Finder helps you **find your first 100 supporters** by matching you with tools and people who fit your vibe.
+Building something new? Bloom Discovery helps you **find your first 100 supporters** by matching you with tools and people who fit your vibe.
 
 **For Vibe Coders:**
 Stop guessing what tools to try next. Get personalized recommendations based on how you actually work, not generic listicles. **Discover skills you'll actually use** instead of scrolling endless lists.
@@ -175,8 +176,8 @@ clawhub install bloom-taste-finder
 ```bash
 # 1. Clone the repo
 cd ~/.openclaw/workspace
-git clone https://github.com/unicornbloom/bloom-identity-skill.git
-cd bloom-identity-skill
+git clone https://github.com/Bloom-Protocol/bloom-discovery-skill.git
+cd bloom-discovery-skill
 
 # 2. Install dependencies
 npm install
@@ -209,7 +210,7 @@ echo "Your conversation here" | \
 → Need at least 3 messages. Keep chatting about tools you're interested in!
 
 **"Command not found"**
-→ Verify `bloom-identity-skill` is in `~/.openclaw/workspace/` and run `npm install`
+→ Verify `bloom-discovery-skill` is in `~/.openclaw/workspace/` and run `npm install`
 
 **No tool recommendations**
 → Tool recommendations depend on API availability. Your identity card still works!
@@ -253,7 +254,7 @@ Your identity card is stored on Bloom Protocol to power your shareable dashboard
 - `bloomprotocol.ai` - Dashboard hosting
 - `clawhub.ai` - Skill recommendations (optional)
 
-**Open Source**: All code is public at [github.com/unicornbloom/bloom-identity-skill](https://github.com/unicornbloom/bloom-identity-skill) for security audits.
+**Open Source**: All code is public at [github.com/Bloom-Protocol/bloom-discovery-skill](https://github.com/Bloom-Protocol/bloom-discovery-skill) for security audits.
 
 ## 🔍 How to Find Skills You'll Love
 
