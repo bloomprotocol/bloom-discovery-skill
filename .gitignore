@@ -1,9 +1,17 @@
 node_modules/
 dist/
 .env
+.env.*
 *.log
 .DS_Store
 .wallet-storage/
 .solc-output/
 .bloom-discovery-state.json
 bloom-discoveries.md
+
+# Secrets — never commit
+*api_key*
+*secret*
+*.backup
+*.pem
+*.key

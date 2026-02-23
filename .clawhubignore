@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+.env.*
 *.log
 .DS_Store
 .wallet-storage/
@@ -16,3 +17,10 @@ generate-fresh-token.ts
 get-test-agent.mjs
 run-skill.sh
 mission-skill.json
+
+# Secrets — never publish
+*api_key*
+*secret*
+*.backup
+*.pem
+*.key
