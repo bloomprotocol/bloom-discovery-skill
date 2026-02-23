@@ -5,3 +5,14 @@ dist/
 .DS_Store
 .wallet-storage/
 .git/
+test-fixtures/
+scripts/
+docs/
+contracts/
+.solc-output/
+*.mjs
+decode-token.js
+generate-fresh-token.ts
+get-test-agent.mjs
+run-skill.sh
+mission-skill.json

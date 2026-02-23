@@ -130,7 +130,7 @@ async function appendToMd(mdFilePath: string, entries: DiscoveryEntry[]): Promis
 export async function syncDiscoveries(
   agentUserId: number | string,
   options?: SyncDiscoveriesOptions,
-): Promise<{ newCount: number; totalSynced: number }> {
+): Promise<{ newCount: number; totalSynced: number; newEntries: DiscoveryEntry[] }> {
   const apiUrl = options?.apiUrl || process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
   const outputDir = options?.outputDir || process.cwd();
 
@@ -157,7 +157,7 @@ export async function syncDiscoveries(
 
   if (discoveries.length === 0) {
     console.log('[discovery-sync] No discoveries returned from API');
-    return { newCount: 0, totalSynced: 0 };
+    return { newCount: 0, totalSynced: 0, newEntries: [] };
   }
 
   // 2. Load state and filter already-synced
@@ -167,7 +167,7 @@ export async function syncDiscoveries(
 
   if (newEntries.length === 0) {
     console.log(`[discovery-sync] All ${discoveries.length} discoveries already synced`);
-    return { newCount: 0, totalSynced: syncedSet.size };
+    return { newCount: 0, totalSynced: syncedSet.size, newEntries: [] };
   }
 
   // 3. Append to markdown
@@ -186,5 +186,5 @@ export async function syncDiscoveries(
   };
   await saveState(stateFilePath, updatedState);
 
-  return { newCount: newEntries.length, totalSynced: syncedSet.size };
+  return { newCount: newEntries.length, totalSynced: syncedSet.size, newEntries };
 }

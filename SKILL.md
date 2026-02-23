@@ -1,6 +1,6 @@
 ---
 name: bloom-identity
-description: Generate Bloom Identity Card from conversation history and Twitter/X data. Analyzes supporter personality through conversations (85% weight) and optionally enriched with Twitter activity (15% weight). Creates personality type (Visionary/Explorer/Cultivator/Optimizer/Innovator), recommends matching OpenClaw skills, and generates agent wallet. Use when user asks to "generate my bloom identity", "create identity card", "analyze my profile", or "discover my personality".
+description: Generate Bloom Identity Card from conversation history and USER.md. Maps builder personality across 4 taste spectrums (Learning, Decision, Novelty, Risk), identifies personality type (Visionary/Explorer/Cultivator/Optimizer/Innovator), recommends matching tools from ClawHub + Claude Code + GitHub, and generates shareable dashboard. Use when user asks to "generate my bloom identity", "create identity card", "analyze my profile", or "discover my personality".
 homepage: https://bloomprotocol.ai
 metadata:
   {
@@ -13,15 +13,13 @@ metadata:
 
 # Bloom Identity Card Generator
 
-Generate personalized Bloom Identity Cards based on **conversation history** (primary) and **Twitter/X activity** (optional supplement).
+Generate personalized Bloom Identity Cards based on **USER.md** (primary identity signal) and **conversation history** (enrichment).
 
 ## Data Sources
 
-### Primary: Conversation History (85% weight)
-- **Always available** - owned by OpenClaw
-- Analyzes topics, interests, preferences from your conversations
-- Most authentic representation of who you are
-- No special permissions required
+### Primary: USER.md + Conversation History
+- **USER.md** — Declared role, tech stack, interests, working style. Injected as first-class text into the personality analyzer. Falls back gracefully if not present.
+- **Conversation history** — Always available from OpenClaw sessions. Analyzes topics, interests, engagement patterns.
 - **⭐ REQUIRES: Minimum 3 messages** in your OpenClaw session
   - If less than 3 messages: Skill will fail with clear error message
   - Solution: Continue chatting with OpenClaw to build conversation history
@@ -32,15 +30,16 @@ Generate personalized Bloom Identity Cards based on **conversation history** (pr
 - Includes: bio, recent tweets, following list, interactions
 - **If not authorized**: Analysis proceeds with conversation only
 
-### Wallet
+### Wallet (Optional)
 - **Creation only** - NOT analyzed for personality
-- Generates Tier 2/3 local wallet for tipping/payments
+- Generates local wallet for tipping/payments (Coinbase CDP on Base)
 - Does NOT analyze transaction history (privacy-preserving)
 
 **Key Rules**:
-1. **Conversation First**: Requires minimum 3 messages in OpenClaw session (no silent fallback)
-2. **Twitter Optional**: Only fetch if user authorized X account access
-3. **Explicit Errors**: If insufficient data → clear error (no degradation to empty results)
+1. **USER.md First**: Primary identity signal when present
+2. **Conversation Required**: Minimum 3 messages (no silent fallback)
+3. **Twitter Optional**: Only fetch if user authorized X account access
+4. **Explicit Errors**: If insufficient data → clear error (no degradation to empty results)
 
 ## Usage
 
@@ -63,11 +62,11 @@ Returns:
 - Personality type (Visionary/Explorer/Cultivator/Optimizer/Innovator)
 - Confidence score
 - Custom tagline and description
+- 4 taste spectrums (Learning, Decision, Novelty, Risk)
 - Main categories and subcategories
-- Recommended OpenClaw skills (with match scores)
-- Agent wallet address (on Base mainnet or Base Sepolia)
-- X402 payment endpoint
+- Recommended tools from ClawHub, Claude Code, and GitHub (with match scores)
 - Dashboard link with auth token
+- Agent wallet address (optional, on Base network)
 
 ## Example
 
@@ -91,14 +90,20 @@ bash scripts/generate.sh --user-id user123
 You are a forward-thinking builder who sees beyond
 the hype and focuses on real-world impact.
 
-**Categories**: Crypto • DeFi • Web3
-**Interests**: Smart Contracts • Layer 2 • Cross-chain
+🏷️  Categories: Crypto · DeFi · Web3
+   Interests: Smart Contracts · Layer 2 · Cross-chain
+
+📊 Taste Spectrums:
+   Learning:  Try First ■■■■■■■■░░ Study First
+   Decision:  Gut ■■■░░░░░░░ Analytical
+   Novelty:   Early Adopter ■■■■■■■░░░ Proven First
+   Risk:      All In ■■■■■■░░░░ Measured
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🎯 **Top Skills Matched for You**
+🎯 **Top Recommended Tools**
 
-1. **DeFi Protocol Analyzer** (95% match) • by Alice
+1. **DeFi Protocol Analyzer** (95% match) · by Alice
    Analyze DeFi protocols for risk and opportunity
 
 2. **Smart Contract Auditor** (90% match)
@@ -108,37 +113,32 @@ the hype and focuses on real-world impact.
    Optimize gas costs for Ethereum transactions
 
 🌐 **View Full Dashboard**
-   https://preview.bloomprotocol.ai/dashboard?token=xxx
+   https://bloomprotocol.ai/dashboard?token=xxx
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🤖 **Your Agent Wallet** (Coming Soon)
-
-0x03Ce4c8fA7D9AfB3aF6E10Cd8e2B1C5a89B09905
-Network: Base
-
-🤖 Analyzed from on-chain activity • Built with @openclaw @coinbase @base 🦞
+🌸 Bloom Identity · Built for indie builders
 ```
 
 ## Triggers
 
 - "generate my bloom identity"
-- "create my identity card"  
+- "create my identity card"
 - "analyze my supporter profile"
 - "mint my bloom card"
 - "discover my personality"
 
 ## Technical Details
 
-- **Version**: 2.0.0
+- **Version**: 2.1.0
 - **Network**: Base (mainnet) or Base Sepolia (testnet) - configurable via NETWORK env var
 - **Authentication**: EIP-191 signed tokens with 7-layer security
 - **Data Sources**:
-  - Conversation history (OpenClaw sessions JSONL) - 85% weight
+  - USER.md (~/.config/claude/USER.md) - primary identity signal
+  - Conversation history (OpenClaw sessions JSONL) - enrichment
   - Twitter/X (bird CLI) - 15% weight, optional
   - Wallet creation only (viem + AES-256-GCM encryption) - NOT analyzed
 - **Integration**: Coinbase AgentKit (optional) + ClawHub API + bird CLI
-- **Payment Protocol**: X402 for agent-to-agent tipping
 - **Privacy**: No wallet transaction analysis, conversation-first approach
 
 ## Requirements
@@ -146,7 +146,7 @@ Network: Base
 - Node.js 18+
 - Environment variables:
   - `JWT_SECRET` - JWT signing secret
-  - `DASHBOARD_URL` - Dashboard URL (default: https://preview.bloomprotocol.ai)
+  - `DASHBOARD_URL` - Dashboard URL (default: https://bloomprotocol.ai)
   - `NETWORK` - Network to use: `base-mainnet` or `base-sepolia` (default: base-mainnet)
   - `CDP_API_KEY_ID`, `CDP_API_KEY_SECRET` - Coinbase CDP credentials (optional)
 

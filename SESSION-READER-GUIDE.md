@@ -49,9 +49,11 @@ is where you spot the next paradigm shift.
 🏷️  Categories: AI Tools · Productivity · Wellness
    Interests: Machine Learning · Automation · Meditation
 
-📊 2x2 Dimensions:
-   Conviction: 50/100
-   Intuition: 55/100
+📊 Taste Spectrums:
+   Learning:  Try First ■■■■■░░░░░ Study First
+   Decision:  Gut ■■■■■■░░░░ Analytical
+   Novelty:   Early Adopter ■■■■░░░░░░ Proven First
+   Risk:      All In ■■■■■■■░░░ Measured
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

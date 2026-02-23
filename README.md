@@ -2,7 +2,7 @@
 
 **AI skill that analyzes your conversations to uncover builder taste and recommend the right tools.**
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/unicornbloom/bloom-identity-skill)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue)](https://github.com/unicornbloom/bloom-identity-skill)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-Compatible-green)](https://openclaw.ai)
 [![ClawHub](https://img.shields.io/badge/ClawHub-Published-purple)](https://clawhub.ai/skills/bloom)
 [![License](https://img.shields.io/badge/license-MIT-orange)](LICENSE)
@@ -17,12 +17,12 @@ Unlike traditional recommendation systems that rely on popularity, Bloom Taste F
 
 **Key Features:**
 - 🎴 **5 Personality Types** – Discover your taste archetype (The Visionary, The Explorer, etc.)
+- 📊 **4-Dimension Taste Profile** – See where you land on Learning, Decision, Novelty, and Risk spectrums
 - 🎯 **Taste-Based Recommendations** – Get personalized tool suggestions from 3 sources:
   - ClawHub Skills (200+ community-created AI agent skills)
   - Claude Code (Official Anthropic + 6 community repositories)
   - GitHub Repositories (1000+ open source projects)
 - 🌱 **Self-Growing Agent** – Recommendations evolve as you interact, with USER.md integration and feedback loops
-- 📊 **Taste Profile** – Understand your preferences beyond simple keywords
 - 🔗 **Shareable Identity Card** – Showcase your taste profile
 - 🤖 **Agent-Ready** – Works with Claude Code, OpenClaw, and other AI agents
 
@@ -77,17 +77,32 @@ Help your users discover tools they'll actually love — not just popular ones, 
 
 ---
 
-## 📊 The 5 Personality Types
+## 📊 Taste Profile
 
-Bloom Taste Finder maps users to one of 5 distinct taste archetypes based on their conversation patterns:
+Bloom maps you across **4 taste spectrums** — each a slider between two poles:
 
-| Type | Tagline | Characteristics |
-|------|---------|-----------------|
-| 💜 **The Visionary** | First to back what's next | High conviction + High intuition - Backs bold ideas early |
-| 🔵 **The Explorer** | Discovers new frontiers | Low conviction + High intuition - Experiments widely |
-| 💚 **The Cultivator** | Builds lasting communities | Low conviction + Low intuition - Nurtures ecosystems |
-| 🟡 **The Optimizer** | Refines what works | High conviction + Low intuition - Doubles down on winners |
-| 🔴 **The Innovator** | Pushes boundaries | Balanced dimensions - Combines conviction + discovery |
+| Spectrum | Left Pole | Right Pole | What It Measures |
+|----------|-----------|------------|------------------|
+| **Learning** | Try First | Study First | How you learn new tools — jump in or read the docs? |
+| **Decision** | Gut | Analytical | How you pick tools — instinct or methodical research? |
+| **Novelty** | Early Adopter | Proven First | When you adopt — bleeding edge or battle-tested? |
+| **Risk** | All In | Measured | How you commit — go big or hedge your bets? |
+
+These 4 dimensions combine with your interest categories to determine your personality type and power your recommendations.
+
+---
+
+## 🎴 The 5 Personality Types
+
+Bloom Taste Finder maps users to one of 5 distinct taste archetypes based on their conversation patterns and taste spectrums:
+
+| Type | Tagline | Taste Profile |
+|------|---------|---------------|
+| 💜 **The Visionary** | First to back what's next | Try-first learner, gut-driven, early adopter, all-in risk taker |
+| 🔵 **The Explorer** | Discovers new frontiers | Try-first learner, gut-driven, experiments widely across categories |
+| 💚 **The Cultivator** | Builds lasting communities | Study-first, analytical, nurtures ecosystems over time |
+| 🟡 **The Optimizer** | Refines what works | Study-first, analytical, proven-first, measured — doubles down on winners |
+| 🔴 **The Innovator** | Pushes boundaries | Balanced across all spectrums — combines conviction with experimentation |
 
 ---
 
@@ -95,30 +110,28 @@ Bloom Taste Finder maps users to one of 5 distinct taste archetypes based on the
 
 Your personalized **Bloom Taste Profile** includes:
 
-- **🎴 Personality Type** – Your taste archetype (The Trailblazer, The Curator, etc.)
+- **🎴 Personality Type** – Your taste archetype (The Visionary, The Explorer, etc.)
 - **💬 Custom Tagline** – A one-liner that captures your taste
-- **📊 Taste Dimensions** – Conviction, Intuition, and Contribution scores
+- **📊 4 Taste Spectrums** – Learning, Decision, Novelty, Risk — each as a visual slider
 - **🏷️ Main Categories** – AI Tools, Productivity, Wellness, Education, Crypto, Lifestyle
 - **🎯 Personalized Recommendations** – From 3 sources:
   - ClawHub Skills (200+ AI agent skills)
   - Claude Code (Official Anthropic + community skills)
   - GitHub Repositories (1000+ open source projects)
 - **🔗 Shareable Dashboard** – Showcase your taste profile
-- **🤖 Agent Wallet** – Ready for blockchain interactions (Coinbase CDP on Base)
 
 ---
 
 ## 🚀 How It Works
 
-### 1. Conversation Analysis
-Bloom analyzes your conversation history to understand:
-- **What excites you** – Topics you discuss with passion
-- **Your interests** – AI, crypto, productivity, wellness, education, lifestyle
-- **How you engage** – Deep exploration vs. quick experiments
-- **Your preferences** – Tools and projects you mention or recommend
+### 1. Signal Collection
+Bloom collects signals from multiple sources to understand you:
+- **Conversation history** – What you talk about, how you engage
+- **USER.md** – Your declared role, tech stack, and interests (primary signal when present)
+- **Feedback** – Interactions with past recommendations (clicks, saves, dismissals)
 
 ### 2. Taste Profile Generation
-Using multiple dimensions (Conviction × Intuition × Contribution), we map you to one of 5 personality types and identify your main interest categories:
+Using 4 taste spectrums (Learning × Decision × Novelty × Risk), we map you to one of 5 personality types and identify your main interest categories:
 - **AI Tools** – Agent frameworks, AI development tools
 - **Productivity** – Workflow automation, productivity apps
 - **Wellness** – Health tech, mindfulness tools
@@ -134,7 +147,7 @@ We match your taste profile against tools from 3 trusted sources:
 
 Ranking by:
 - **Keyword matching** – Exact and semantic similarity
-- **Personality fit** – Trailblazers get cutting-edge tools
+- **Personality fit** – Visionaries get cutting-edge tools
 - **Category alignment** – Your interests × tool categories
 - **Community validation** – What similar users love
 
@@ -142,17 +155,17 @@ Ranking by:
 
 Your agent doesn't stop at the first recommendation — it **learns and improves**:
 
-- **USER.md Integration** — Reads your `~/.config/claude/USER.md` for declared role, tech stack, and interests. Falls back gracefully if not present.
+- **USER.md Integration** — Reads your `~/.config/claude/USER.md` for declared role, tech stack, and interests. This is the primary identity signal — conversation analysis enriches it. Falls back gracefully if not present.
 - **Feedback Loop** — Interactions (clicks, saves, dismissals) adjust future recommendations. Engaged categories get boosted; dismissed skills get filtered out.
 - **Discovery Sync** — Newly discovered skills sync to a local `bloom-discoveries.md`, building growing context.
 - **TTL Refresh** — Recommendations refresh every 7 days via backend worker, pulling in new skills and applying your latest feedback.
 
-**Signal weighting evolves over time:**
-| Source | Initial Weight | After 15+ interactions |
-|--------|---------------|----------------------|
-| Conversation | ~60% | ~40% |
-| USER.md | ~30% | ~20% |
-| Feedback | ~0% | up to ~30% |
+**Signal weighting:**
+| Source | Weight | Notes |
+|--------|--------|-------|
+| USER.md | ~30% | Primary identity signal, injected into analysis as first-class text |
+| Conversation | ~60% | Topics, engagement patterns, mentioned tools |
+| Feedback | up to ~30% | Grows over time as interactions accumulate |
 
 > **Safety-first:** Bloom recommends skills but **never auto-installs** them. You always decide what to install. We believe great recommendations earn trust — auto-installing unvetted code doesn't.
 
@@ -160,7 +173,6 @@ Your agent doesn't stop at the first recommendation — it **learns and improves
 You get:
 - A shareable taste profile dashboard
 - Personalized tool recommendations with match reasons
-- An on-chain agent wallet (Base network)
 - A JWT-signed token for verification
 
 **Privacy-first. Conversation-based. No wallet signatures required.**
@@ -181,8 +193,8 @@ clawhub install bloom-taste-finder
 ```bash
 # 1. Clone the repo
 cd ~/.openclaw/workspace
-git clone https://github.com/unicornbloom/bloom-taste-skill.git
-cd bloom-taste-skill
+git clone https://github.com/unicornbloom/bloom-identity-skill.git
+cd bloom-identity-skill
 
 # 2. Install dependencies
 npm install
@@ -253,7 +265,7 @@ cat conversation.txt | \
 JWT_SECRET=your_secret_key_here
 DASHBOARD_URL=https://bloomprotocol.ai
 
-# Optional (for real agent wallet creation)
+# Optional (for agent wallet creation)
 CDP_API_KEY_ID=your_coinbase_key
 CDP_API_KEY_SECRET=your_coinbase_secret
 NETWORK=base-mainnet  # or base-sepolia
@@ -287,12 +299,12 @@ npx tsx scripts/test-full-flow.ts
 
 | Feature | Details |
 |---------|---------|
-| **Version** | 2.0.0 |
-| **Analysis Engine** | Conversation memory + category mapping |
+| **Version** | 2.1.0 |
+| **Analysis Engine** | 4-dimension taste spectrums + category mapping |
+| **Primary Signal** | USER.md (role, tech stack, interests) |
 | **Session Context** | Last ~120 messages (~5KB) |
 | **Processing Time** | ~2-5 seconds |
 | **Output Format** | Structured text + shareable dashboard URL |
-| **Agent Wallet** | Coinbase CDP (Base network) |
 | **Supported Platforms** | OpenClaw, CLI, API |
 
 ---
@@ -303,7 +315,7 @@ npx tsx scripts/test-full-flow.ts
 → Need at least 3 messages. Keep chatting about what you're interested in!
 
 **"Command not found"**
-→ Verify `bloom-taste-skill` is in `~/.openclaw/workspace/` and run `npm install`
+→ Verify `bloom-identity-skill` is in `~/.openclaw/workspace/` and run `npm install`
 
 **No recommendations**
 → Recommendations depend on data source availability. Your taste profile still works!
@@ -315,11 +327,9 @@ npx tsx scripts/test-full-flow.ts
 
 ## 📚 Documentation
 
-- [Installation Guide](SESSION-READER-GUIDE.md)
+- [Session Reader Guide](SESSION-READER-GUIDE.md)
 - [OpenClaw Integration](openclaw-wrapper/SKILL.md)
 - [CDP Wallet Setup](SETUP_CDP_CREDENTIALS.md)
-- [Frontend Implementation](FRONTEND-IMPLEMENTATION-GUIDE.md)
-- [Testing Guide](TESTING_GUIDE.md)
 
 ---
 
@@ -347,7 +357,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 - **Homepage**: [bloomprotocol.ai](https://bloomprotocol.ai)
 - **For Agents**: [bloomprotocol.ai/for-agents](https://bloomprotocol.ai/for-agents)
 - **ClawHub**: [clawhub.ai/skills/bloom](https://clawhub.ai/skills/bloom)
-- **GitHub**: [github.com/unicornbloom/bloom-taste-skill](https://github.com/unicornbloom/bloom-taste-skill)
+- **GitHub**: [github.com/unicornbloom/bloom-identity-skill](https://github.com/unicornbloom/bloom-identity-skill)
 - **Dashboard**: [bloomprotocol.ai/agents](https://bloomprotocol.ai/agents)
 
 ---

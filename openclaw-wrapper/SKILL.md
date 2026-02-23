@@ -1,13 +1,12 @@
 ---
 name: bloom
-description: Bloom Taste Finder — discover your builder taste and get a personalized tool stack + early supporters. For indie devs, vibe coders, and AI builders.
+description: Bloom Taste Finder — discover your builder taste across 4 spectrums and get a personalized tool stack. For indie devs, vibe coders, and AI builders.
 user-invocable: true
 command-dispatch: tool
 metadata: {"requires": {"bins": ["node", "npx"]}}
 permissions:
   - read:conversations  # Analyzes your conversation history
   - network:external    # Connects to Bloom API for dashboard
-  - crypto:wallet       # Creates agent wallet (optional feature)
 ---
 
 # Bloom Taste Finder
@@ -22,38 +21,35 @@ This skill requires the following permissions:
 
 **🌐 External Network** - Connects to Bloom Protocol API to:
 - Generate your shareable dashboard URL
-- Store your identity card (personality type, tagline, categories)
+- Store your identity card (personality type, taste spectrums, categories)
 - Enable future features (skill recommendations, creator tipping)
-
-**🔐 Agent Wallet (Optional)** - Creates a blockchain wallet on Base network (Coinbase CDP) for future tipping features. This is generated automatically but not required for basic functionality.
 
 **Your Control**: Your conversation is analyzed locally. You decide whether to share your identity card publicly via the dashboard link.
 
 Are you a Visionary who jumps on new tools early? An Explorer trying everything? A Cultivator building communities? An Optimizer fine-tuning workflows? Or an Innovator pushing boundaries?
 
-Find out in seconds with Bloom Supporter Identity.
+Find out in seconds with Bloom Taste Finder.
 
 ## 🎯 What You Get
 
-Your personalized Bloom Supporter Identity Card reveals:
+Your personalized Bloom Identity Card reveals:
 
 - **🎴 Your Supporter Type** – Visionary, Explorer, Cultivator, Optimizer, or Innovator
 - **💬 Custom Tagline** – A one-liner that captures your vibe ("First to try new AI tools")
-- **📊 2x2 Dimensions** – Conviction vs. Intuition, showing how you make decisions
+- **📊 4 Taste Spectrums** – Learning, Decision, Novelty, Risk — see where you fall on each spectrum
 - **🏷️ Top Categories** – AI Tools, Productivity, Consumer Apps—where you spend your energy
 - **🎯 Tool Recommendations** – The top 5 tools matched to your profile
 - **🌱 Self-Growing Agent** – Your recommendations evolve as you interact (see below)
 - **🔗 Shareable Card** – Show off your supporter identity
-- **🤖 Agent Wallet** – Ready for tipping creators (powered by Coinbase on Base)
 
 ## ⚡️ How It Works
 
 Simple: just type `/bloom` in your chat.
 
-We analyze your last ~120 messages to understand:
+We analyze your USER.md and last ~120 messages to understand:
 - **What excites you** (AI agents? productivity hacks? creative tools?)
 - **How you engage** (deep dives vs. quick experiments)
-- **Your supporter archetype** (early adopter or wait-and-see?)
+- **Your taste profile** (4 spectrums: try-first or study-first? gut or analytical? early adopter or proven-first? all-in or measured?)
 
 **No complex setup. No wallet signatures. No auth flows.**
 Just pure conversation intelligence.
@@ -62,8 +58,8 @@ Just pure conversation intelligence.
 
 1) **Chat a little first** (at least 3 messages) so Bloom has context.
 2) Type **`/bloom`**.
-3) You’ll get your **Identity Card + tool recommendations + dashboard link**.
-4) If you’re brand new, Bloom will ask **4 quick questions** and generate your card immediately.
+3) You'll get your **Identity Card + tool recommendations + dashboard link**.
+4) If you're brand new, Bloom will ask **4 quick questions** and generate your card immediately.
 
 ## 🚀 Usage
 
@@ -86,7 +82,7 @@ Your agent doesn't just recommend once — it **learns and improves** over time.
 
 ### How It Works
 
-1. **USER.md Integration** — If you have a `~/.config/claude/USER.md`, Bloom reads your declared role, tech stack, and interests to enrich your profile. No USER.md? No problem — the system gracefully falls back to conversation-only analysis.
+1. **USER.md Integration** — If you have a `~/.config/claude/USER.md`, Bloom reads your declared role, tech stack, and interests as the primary identity signal. No USER.md? No problem — the system gracefully falls back to conversation-only analysis.
 
 2. **Feedback Loop** — As you interact with recommendations (click, save, or dismiss), Bloom adjusts future suggestions. Categories you engage with get boosted; dismissed skills get filtered out.
 
@@ -125,7 +121,7 @@ Stop guessing what tools to try next. Get personalized recommendations based on 
 
 ```
 ═══════════════════════════════════════════════════════
-🎉 Your Bloom Supporter Identity Card is ready! 🤖
+🎉 Your Bloom Identity Card is ready! 🤖
 ═══════════════════════════════════════════════════════
 
 🔗 VIEW YOUR IDENTITY CARD:
@@ -143,9 +139,11 @@ hype. AI agents are where you spot the next big thing.
 🏷️  Categories: AI Tools · Productivity · Automation
    Interests: AI Agents · No-code Tools · Creative AI
 
-📊 2x2 Dimensions:
-   Conviction: 78/100
-   Intuition: 85/100
+📊 Taste Spectrums:
+   Learning:  Try First ■■■■■■■■░░ Study First
+   Decision:  Gut ■■■░░░░░░░ Analytical
+   Novelty:   Early Adopter ■■■■■■■░░░ Proven First
+   Risk:      All In ■■■■■■░░░░ Measured
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -161,20 +159,9 @@ hype. AI agents are where you spot the next big thing.
 
 ...
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🤖 Your Agent Wallet Created
-
-   Network: Base
-   Status: ✅ Wallet generated and ready
-
-   💡 Use your agent wallet to tip tool creators!
-   ⚠️  Tipping features coming soon
-   🔒 Do not deposit funds yet - withdrawals not ready
-
 ═══════════════════════════════════════════════════════
 
-🌸 Bloom Supporter Identity · Built for indie builders
+🌸 Bloom Identity · Built for indie builders
 ```
 
 ## 🔧 Installation
@@ -231,13 +218,13 @@ echo "Your conversation here" | \
 
 **What We Analyze (Locally)**:
 - ✅ Your conversation messages (last ~120 messages)
+- ✅ Your USER.md (role, tech stack, interests)
 - ✅ Topics and interests you discuss
 - ✅ No wallet transaction analysis
 - ✅ No personal identifiable information
 
 **What We Store**:
-- Your identity card (personality type, tagline, categories)
-- Agent wallet address (for future tipping features)
+- Your identity card (personality type, taste spectrums, categories)
 - Dashboard URL for sharing
 
 **What We Don't Collect**:
@@ -251,17 +238,10 @@ Your identity card is stored on Bloom Protocol to power your shareable dashboard
 
 ## 🔒 Security Notes
 
-**Agent Wallet**:
-- Automatically generated on first run via Coinbase CDP (Base network)
-- Used for future creator tipping (not yet active)
-- ⚠️ **Do not deposit funds** - withdrawal features not ready
-- Private keys stored locally with AES-256-GCM encryption
-- Read-only until tipping features are enabled
-
 **Conversation Access**:
 - Reads from `~/.openclaw/agents/main/sessions/*.jsonl`
 - Only analyzes content locally (text not uploaded)
-- Results (personality type, categories) sent to Bloom API
+- Results (personality type, spectrums, categories) sent to Bloom API
 
 **JWT Tokens**:
 - Used for dashboard authentication only
@@ -286,28 +266,28 @@ Once you know your supporter type, you can:
 ## 📊 The 5 Supporter Types
 
 **💜 The Visionary** – First to try new tools
-High conviction, high intuition. Jumps on cutting-edge stuff early.
+Try-first learner, gut-driven, early adopter. Jumps on cutting-edge stuff before it's mainstream.
 
 **🔵 The Explorer** – Tries everything
-Low conviction, high intuition. Experiments widely, finds hidden gems.
+Try-first learner, experiments widely. Finds hidden gems across all categories.
 
 **💚 The Cultivator** – Builds communities
-Low conviction, low intuition. Nurtures ecosystems, shares knowledge.
+Study-first, analytical. Nurtures ecosystems, shares knowledge, builds lasting value.
 
 **🟡 The Optimizer** – Refines workflows
-High conviction, low intuition. Doubles down on what works, maximizes productivity.
+Study-first, proven-first, measured. Doubles down on what works, maximizes productivity.
 
 **🔴 The Innovator** – Pushes boundaries
-Balanced dimensions. Combines conviction with experimentation.
+Balanced across all spectrums. Combines conviction with experimentation.
 
 ## 🧬 Technical Details
 
-- **Version**: 2.0.0
-- **Analysis Engine**: Conversation memory + category mapping
+- **Version**: 2.1.0
+- **Analysis Engine**: 4-dimension taste spectrums + category mapping
+- **Primary Signal**: USER.md (role, tech stack, interests)
 - **Session Context**: Last ~120 messages (~5KB)
 - **Processing Time**: ~2-5 seconds
 - **Output Format**: Structured text + shareable dashboard URL
-- **Agent Wallet**: Coinbase CDP (Base network)
 
 ---
 

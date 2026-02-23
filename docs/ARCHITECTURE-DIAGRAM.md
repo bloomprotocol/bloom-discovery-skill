@@ -18,17 +18,17 @@ graph TB
 
     H --> I[Personality Analyzer]
 
-    I --> J[Calculate Conviction]
-    I --> K[Calculate Intuition]
-    I --> L[Calculate Contribution]
+    I --> J[Calculate Taste Spectrums]
+    I --> K[Learning / Decision / Novelty / Risk]
+    I --> L[Category Detection]
 
-    J --> M[2x2 Quadrant Classification]
+    J --> M[4-Dimension Taste Spectrum Classification]
     K --> M
     L --> M
 
     M --> N{Contribution > 65?}
     N -->|Yes| O[The Cultivator]
-    N -->|No| P[2x2 Classification]
+    N -->|No| P[Taste Spectrum Classification]
 
     P --> Q{Conviction ≥ 50?}
     Q -->|Yes| R{Intuition ≥ 50?}
@@ -142,7 +142,7 @@ graph TD
     style Q fill:#90ee90
 ```
 
-## Personality Classification (2x2 + Override)
+## Personality Classification (4-Dimension Taste Spectrums)
 
 ```mermaid
 graph TD
@@ -153,11 +153,11 @@ graph TD
     D -->|Yes| E{Intuition ≥ 50?}
     D -->|No| F{Intuition ≥ 50?}
 
-    E -->|Yes| G[💜 The Visionary<br/>High Conviction<br/>High Intuition]
-    E -->|No| H[🧡 The Optimizer<br/>High Conviction<br/>Low Intuition]
+    E -->|Yes| G[💜 The Visionary<br/>Try-first, Gut-driven<br/>Early Adopter, All-in]
+    E -->|No| H[🧡 The Optimizer<br/>Study-first, Analytical<br/>Proven First, Measured]
 
-    F -->|Yes| I[💚 The Explorer<br/>Low Conviction<br/>High Intuition]
-    F -->|No| J[💙 The Innovator<br/>Low Conviction<br/>Low Intuition]
+    F -->|Yes| I[💚 The Explorer<br/>Try-first, Gut-driven<br/>Experiments Widely]
+    F -->|No| J[💙 The Innovator<br/>Balanced Spectrums<br/>Conviction + Discovery]
 
     style C fill:#add8e6
     style G fill:#dda0dd
@@ -253,10 +253,10 @@ sequenceDiagram
     D->>D: Include conversation memory
     D-->>P: Return user data
 
-    P->>P: Calculate Conviction
-    P->>P: Calculate Intuition
-    P->>P: Calculate Contribution
-    P->>P: Classify personality (2x2)
+    P->>P: Calculate Learning spectrum
+    P->>P: Calculate Decision spectrum
+    P->>P: Calculate Novelty + Risk spectrums
+    P->>P: Classify personality (taste spectrums)
     P->>P: Detect categories from data
     P-->>R: Return identity data
 
@@ -319,7 +319,7 @@ graph TD
     F --> J
 
     J --> K[Analyze personality]
-    K --> L[Display 2x2 metrics]
+    K --> L[Display taste spectrums]
     K --> M[Display personality type]
     K --> N[Display detected categories]
 
