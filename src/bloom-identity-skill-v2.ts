@@ -12,11 +12,6 @@ import { PersonalityAnalyzer } from './analyzers/personality-analyzer';
 import { EnhancedDataCollector } from './analyzers/data-collector-enhanced';
 import { ManualQAFallback, ManualAnswer } from './analyzers/manual-qa-fallback';
 import { CategoryMapper } from './analyzers/category-mapper';
-import { AgentWallet, AgentWalletInfo } from './blockchain/agent-wallet';
-import { walletStorage } from './blockchain/wallet-storage';
-import { mintIdentitySbt } from './blockchain/identity-sbt';
-import { captureAndUploadCardImage } from './blockchain/card-image';
-import { TwitterShare, createTwitterShare } from './integrations/twitter-share';
 import { PersonalityType } from './types/personality';
 import { HiddenPatternInsight, AiPlaybook } from './types/taste-dimensions';
 import { refreshRecommendations, SkillRecommendation } from './recommendation-pipeline';
@@ -67,50 +62,12 @@ export class BloomIdentitySkillV2 {
   private dataCollector: EnhancedDataCollector;
   private manualQA: ManualQAFallback;
   private categoryMapper: CategoryMapper;
-  private agentWallet: AgentWallet | null = null;
-  private twitterShare: TwitterShare;
 
   constructor() {
     this.personalityAnalyzer = new PersonalityAnalyzer();
     this.dataCollector = new EnhancedDataCollector();
     this.manualQA = new ManualQAFallback();
     this.categoryMapper = new CategoryMapper();
-    this.twitterShare = createTwitterShare();
-  }
-
-  /**
-   * Initialize agent wallet (one-time setup)
-   *
-   * ⭐ Creates per-user wallet using userId
-   */
-  private async initializeAgentWallet(userId: string): Promise<AgentWalletInfo> {
-    if (this.agentWallet) {
-      return this.agentWallet.getWalletInfo();
-    }
-
-    console.log('🤖 Initializing agent wallet...');
-
-    // Network priority: NETWORK env var > NODE_ENV-based > default to mainnet
-    const network = (process.env.NETWORK as 'base-mainnet' | 'base-sepolia') ||
-                   (process.env.NODE_ENV === 'production' ? 'base-mainnet' : 'base-sepolia');
-
-    // ⭐ Pass userId for per-user wallet
-    this.agentWallet = new AgentWallet({ userId, network });
-
-    const walletInfo = await this.agentWallet.initialize();
-
-    // Pre-register with Bloom Protocol (wallet address only, no identity data yet)
-    try {
-      const registration = await this.agentWallet.registerWithBloom('Bloom Skill Discovery Agent');
-      console.log(`✅ Agent pre-registered with Bloom: userId ${registration.agentUserId}`);
-      walletInfo.x402Endpoint = registration.x402Endpoint;
-      walletInfo.agentUserId = registration.agentUserId;
-    } catch (error) {
-      // Not critical - identity will be saved in Step 5 via agent-save fallback
-      console.warn('⚠️ Bloom pre-registration skipped (identity will be saved later)');
-    }
-
-    return walletInfo;
   }
 
   /**
@@ -125,17 +82,14 @@ export class BloomIdentitySkillV2 {
       conversationText?: string; // ⭐ NEW: Direct conversation text from OpenClaw bot
       userMdPath?: string;       // Path to USER.md, default ~/.config/claude/USER.md
       feedback?: FeedbackData;   // Feedback signals from recommendation interactions
-      // SBT minting is automatic when SBT_CONTRACT_ADDRESS is set
     }
   ): Promise<{
     success: boolean;
     mode: 'data' | 'manual' | 'hybrid';
     identityData?: IdentityData;
-    agentWallet?: AgentWalletInfo;
     recommendations?: SkillRecommendation[];
     discoveries?: DiscoveryEntry[];
     dashboardUrl?: string;
-    shareUrl?: string;
     dataQuality?: number;
     dimensions?: {
       conviction: number;
@@ -153,12 +107,6 @@ export class BloomIdentitySkillV2 {
         registerUrl: string;
         loginUrl: string;
       };
-      mint?: {
-        contractAddress: string;
-        tokenUri: string;
-        txHash: string;
-        network: string;
-      };
     };
     error?: string;
     needsManualInput?: boolean;
@@ -174,7 +122,6 @@ export class BloomIdentitySkillV2 {
       let dataQuality = 0;
       let usedManualQA = false;
       let dimensions: { conviction: number; intuition: number; contribution: number } | undefined;
-      let mintAction: { contractAddress: string; tokenUri: string; txHash: string; network: string } | undefined;
 
       // Step 1.5: Parse USER.md for static profile signals
       console.log('📋 Step 1.5: Parsing USER.md...');
@@ -200,7 +147,7 @@ export class BloomIdentitySkillV2 {
         } else {
           // Original: Collect from session files
           userData = await this.dataCollector.collect(userId, {
-            // Default: Conversation + Twitter only (no wallet analysis)
+            // Default: Conversation + Twitter only
           });
         }
 
@@ -335,8 +282,8 @@ export class BloomIdentitySkillV2 {
         console.log(`✅ Manual analysis complete: ${identityData.personalityType}`);
       }
 
-      // Step 3: Recommend OpenClaw Skills ⭐ NEW
-      console.log('🔍 Step 3: Finding matching OpenClaw Skills...');
+      // Step 3: Recommend OpenClaw Skills
+      console.log('🔍 Step 3: Finding matching skills...');
       const merged = (userMdSignals || options?.feedback)
         ? mergeSignals(
             identityData!.mainCategories,
@@ -348,13 +295,7 @@ export class BloomIdentitySkillV2 {
       const recommendations = await this.recommendSkills(identityData!, merged);
       console.log(`✅ Found ${recommendations.length} matching skills`);
 
-      // Step 4: Initialize Agent Wallet ⭐ Per-User Wallet
-      console.log('🤖 Step 4: Initializing Agent Wallet...');
-      const agentWallet = await this.initializeAgentWallet(userId);  // ⭐ Pass userId
-      console.log(`✅ Agent wallet deployed on ${agentWallet.network}`);
-
-      // Step 5: Register agent and save identity card with Bloom
-      // Try wallet-based registration first, fall back to wallet-free save
+      // Step 4: Save identity card with Bloom API
       let dashboardUrl: string | undefined;
       let agentUserId: number | undefined;
 
@@ -375,43 +316,34 @@ export class BloomIdentitySkillV2 {
       };
 
       try {
-        console.log('📝 Step 5: Registering agent with Bloom...');
+        console.log('📝 Step 4: Saving identity with Bloom...');
+        const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
+        const response = await fetch(`${apiBase}/ai-agents/agent-save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agentName: 'Bloom Discovery Agent',
+            userId,
+            identityData: identityPayload,
+          }),
+        });
 
-        // Try wallet-based registration (with signature)
-        const registration = await this.agentWallet!.registerWithBloom(
-          'Bloom Skill Discovery Agent',
-          identityPayload,
-        );
-        agentUserId = registration.agentUserId;
-        console.log(`✅ Agent registered with wallet! User ID: ${agentUserId}`);
-      } catch (walletError) {
-        console.debug('Wallet registration fallback:', walletError instanceof Error ? walletError.message : walletError);
-
-        try {
-          // Fallback: save without wallet signature
-          const saveResult = await this.agentWallet!.saveIdentityWithBloom(
-            'Bloom Skill Discovery Agent',
-            identityPayload,
-          );
-          agentUserId = saveResult.agentUserId;
-          console.log(`✅ Agent identity saved (wallet-free)! User ID: ${agentUserId}`);
-        } catch (saveError) {
-          console.error('❌ Both registration methods failed:', saveError);
+        if (response.ok) {
+          const data = await response.json();
+          agentUserId = data.agentUserId;
+          console.log(`✅ Identity saved! User ID: ${agentUserId}`);
+        } else {
+          console.error(`❌ API save failed: ${response.status}`);
         }
+      } catch (saveError) {
+        console.error('❌ Identity save failed:', saveError instanceof Error ? saveError.message : saveError);
       }
 
-      // Fallback: use agentUserId from pre-registration
-      if (!agentUserId && agentWallet.agentUserId) {
-        agentUserId = agentWallet.agentUserId;
-        console.log(`✅ Using pre-registered agentUserId: ${agentUserId}`);
-      }
-
-      // Sync discoveries (awaited to surface "New for You" in output)
+      // Sync discoveries (with 3s timeout)
       let discoveries: DiscoveryEntry[] = [];
 
       if (agentUserId) {
         try {
-          // Race against a 3s timeout so slow API doesn't block output
           const syncResult = await Promise.race([
             syncDiscoveries(agentUserId),
             new Promise<never>((_, reject) =>
@@ -425,101 +357,34 @@ export class BloomIdentitySkillV2 {
 
         const baseUrl = process.env.DASHBOARD_URL || 'https://bloomprotocol.ai';
         dashboardUrl = `${baseUrl}/agents/${agentUserId}`;
-        console.log(`✅ Public URL created: ${dashboardUrl}`);
+        console.log(`✅ Dashboard: ${dashboardUrl}`);
       }
 
-      // Step 6: Twitter share (DISABLED - image embedding issues)
-      // TODO: Re-enable when we can properly embed card images in Twitter
-      let shareUrl: string | undefined;
-      // if (!options?.skipShare) {
-      //   try {
-      //     console.log('📢 Step 6: Generating Twitter share link...');
-      //     shareUrl = await this.twitterShare.share({
-      //       userId,
-      //       personalityType: identityData!.personalityType,
-      //       recommendations: recommendations.slice(0, 3).map(r => ({
-      //         skillName: r.skillName,
-      //         matchScore: r.matchScore,
-      //       })),
-      //       agentWallet: undefined,
-      //     });
-      //     console.log(`✅ Share link ready`);
-      //   } catch (error) {
-      //     console.warn('⚠️  Twitter share link generation failed (skipping):', error);
-      //   }
-      // }
-
-      // Success!
       console.log('🎉 Bloom Identity generation complete!');
 
       // Prepare share data for frontend buttons
       const shareData = dashboardUrl ? {
         url: dashboardUrl,
         text: `Just discovered my Bloom Identity: ${identityData!.personalityType}! 🌸\n\nCheck out my personalized skill recommendations on @bloomprotocol 🚀`,
-        hashtags: ['BloomProtocol', 'Web3Identity', 'OpenClaw'],
+        hashtags: ['BloomProtocol', 'BloomDiscovery', 'OpenClaw'],
       } : undefined;
-
-      // Auto-mint SBT on Base when contract + minter key are configured
-      const sbtContractAddress = process.env.SBT_CONTRACT_ADDRESS as `0x${string}` | undefined;
-      const sbtMinterKey = process.env.SBT_MINTER_PRIVATE_KEY || process.env.DEPLOYER_PRIVATE_KEY;
-      if (sbtContractAddress && sbtMinterKey) {
-        try {
-          const minterKey = (sbtMinterKey.startsWith('0x') ? sbtMinterKey : `0x${sbtMinterKey}`) as `0x${string}`;
-
-          // Capture card screenshot from dashboard and upload to IPFS
-          let cardImageUrl: string | undefined;
-          if (dashboardUrl) {
-            console.log('📸 Capturing Taste Card image...');
-            const imageResult = await captureAndUploadCardImage(dashboardUrl, identityData!.personalityType);
-            if (imageResult) {
-              cardImageUrl = imageResult.ipfsUrl;
-              console.log(`✅ Card image uploaded to IPFS: ${imageResult.gatewayUrl}`);
-            }
-          }
-
-          const tokenUri = this.buildTokenUri(identityData!, agentWallet, dashboardUrl, dimensions, cardImageUrl);
-          const txHash = await mintIdentitySbt({
-            contractAddress: sbtContractAddress,
-            to: agentWallet.address as `0x${string}`,
-            tokenUri,
-            network: agentWallet.network as 'base-mainnet' | 'base-sepolia',
-            privateKey: minterKey,
-          });
-
-          mintAction = {
-            contractAddress: sbtContractAddress,
-            tokenUri,
-            txHash,
-            network: agentWallet.network,
-          };
-          console.log(`✅ Taste Card minted on Base (tx: ${txHash.slice(0, 10)}...)`);
-        } catch (error) {
-          // Non-blocking — skill still succeeds without SBT
-          console.debug('SBT mint skipped:', error instanceof Error ? error.message : error);
-        }
-      }
 
       return {
         success: true,
         mode: usedManualQA ? 'manual' : 'data',
         identityData: identityData!,
-        agentWallet,
         recommendations,
         discoveries,
         dashboardUrl,
-        shareUrl,
         dataQuality,
-        dimensions, // ⭐ Include 2x2 metrics in result
-        // ⭐ Frontend action buttons data
+        dimensions,
         actions: {
-          share: shareData, // For "Share on X" button
+          share: shareData,
           save: dashboardUrl ? {
-            // For "Save to Collection" button
             prompt: 'Save this card to your Bloom collection',
             registerUrl: `${process.env.DASHBOARD_URL || 'https://bloomprotocol.ai'}/register?return=${encodeURIComponent(dashboardUrl)}`,
             loginUrl: `${process.env.DASHBOARD_URL || 'https://bloomprotocol.ai'}/login?return=${encodeURIComponent(dashboardUrl)}`,
           } : undefined,
-          mint: mintAction,
         },
       };
     } catch (error) {
@@ -530,66 +395,6 @@ export class BloomIdentitySkillV2 {
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
-  }
-
-  private buildTokenUri(
-    identity: IdentityData,
-    wallet: AgentWalletInfo,
-    dashboardUrl?: string,
-    dims?: { conviction: number; intuition: number; contribution: number },
-    ipfsImageUrl?: string,
-  ): string {
-    const baseUrl = process.env.DASHBOARD_URL || 'https://bloomprotocol.ai';
-    // Use IPFS screenshot if available, fallback to static OG image
-    const typeSlug = identity.personalityType.replace(/^The /, '').toLowerCase();
-    const ogImage = ipfsImageUrl || `${baseUrl}/og/${typeSlug}.png`;
-
-    const metadata: Record<string, any> = {
-      name: `Bloom Taste Card — ${identity.personalityType}`,
-      description: identity.customTagline,
-      image: ogImage,
-      external_url: dashboardUrl,
-      attributes: [
-        { trait_type: 'Personality Type', value: identity.personalityType },
-        ...identity.mainCategories.map(c => ({ trait_type: 'Category', value: c })),
-        { trait_type: 'Discovery Mode', value: 'Active' },
-      ],
-    };
-
-    // Add dimension scores when available
-    if (dims) {
-      metadata.attributes.push(
-        { trait_type: 'Conviction', value: dims.conviction, display_type: 'number' },
-        { trait_type: 'Intuition', value: dims.intuition, display_type: 'number' },
-        { trait_type: 'Contribution', value: dims.contribution, display_type: 'number' },
-      );
-    }
-
-    // Add taste spectrum scores
-    if (identity.tasteSpectrums) {
-      metadata.attributes.push(
-        { trait_type: 'Learning Style', value: identity.tasteSpectrums.learning, display_type: 'number' },
-        { trait_type: 'Decision Style', value: identity.tasteSpectrums.decision, display_type: 'number' },
-        { trait_type: 'Novelty Style', value: identity.tasteSpectrums.novelty, display_type: 'number' },
-        { trait_type: 'Risk Style', value: identity.tasteSpectrums.risk, display_type: 'number' },
-      );
-    }
-
-    // Add strengths
-    if (identity.strengths?.length) {
-      for (const strength of identity.strengths) {
-        metadata.attributes.push({ trait_type: 'Strength', value: strength });
-      }
-    }
-
-    // Add hidden pattern insight
-    if (identity.hiddenInsight) {
-      metadata.attributes.push({ trait_type: 'Hidden Pattern', value: identity.hiddenInsight.brief });
-    }
-
-    const json = JSON.stringify(metadata);
-    const base64 = Buffer.from(json).toString('base64');
-    return `data:application/json;base64,${base64}`;
   }
 
   /**
@@ -628,7 +433,7 @@ export const bloomIdentitySkillV2 = {
     'generate my bloom identity',
     'create my identity card',
     'analyze my supporter profile',
-    'mint my bloom card',
+    'create my bloom card',
     'discover my personality',
   ],
 
@@ -659,18 +464,9 @@ export const bloomIdentitySkillV2 = {
       };
     }
 
-    // Sanitize result: Remove wallet address for privacy
-    const sanitizedResult = {
-      ...result,
-      agentWallet: result.agentWallet ? {
-        network: result.agentWallet.network,
-        hasWallet: true, // Flag that wallet exists, but don't expose address
-      } : undefined,
-    };
-
     return {
       message: formatSuccessMessage(result),
-      data: sanitizedResult,
+      data: result,
     };
   },
 };
@@ -690,12 +486,11 @@ function formatSuccessMessage(result: any): string {
 
   msg += `\n**Categories**: ${identityData.mainCategories.join(' • ')}`;
 
-  // SBT mint data is in result.actions.mint but not shown to users (web3-native only on dashboard)
   if (recommendations?.length > 0 && result.dashboardUrl) {
-    msg += `\n\n✨ **Your Taste Card is ready**`;
+    msg += `\n\n✨ **Your Identity Card is ready**`;
     msg += `\n→ See your card & recommendations: ${result.dashboardUrl}`;
   } else if (result.dashboardUrl) {
-    msg += `\n\n✨ **Your Taste Card is ready**`;
+    msg += `\n\n✨ **Your Identity Card is ready**`;
     msg += `\n→ See your card: ${result.dashboardUrl}`;
   }
 

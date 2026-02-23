@@ -97,7 +97,7 @@ async function main() {
 }
 
 function formatResult(result: any): void {
-  const { identityData, agentWallet, recommendations, discoveries, mode, dimensions, dashboardUrl } = result;
+  const { identityData, recommendations, discoveries, mode, dimensions, dashboardUrl } = result;
 
   const modeEmoji = mode === 'manual' ? '📝' : '🤖';
 
@@ -186,16 +186,8 @@ function formatResult(result: any): void {
     console.log('');
   }
 
-  // Wallet info with marketing message
-  console.log('🤖 Your Agent Wallet Created\n');
-  console.log(`   Network: ${agentWallet?.network || 'Base'}`);
-  console.log('   Status: ✅ Wallet generated and registered\n');
-  console.log('   💡 Use your agent wallet to tip skill creators!');
-  console.log('   ⚠️  Tipping, payments, and management features coming soon');
-  console.log('   🔒 Do not deposit funds - withdrawals not ready yet\n');
-
   console.log('═══════════════════════════════════════════════════════\n');
-  console.log(`${mode === 'manual' ? '📝 Q&A' : '🤖 Conversation'} • @openclaw @coinbase @base 🦞\n`);
+  console.log(`${mode === 'manual' ? '📝 Q&A' : '🤖 Conversation'} • @openclaw 🦞\n`);
 }
 
 function getPersonalityEmoji(type: string): string {

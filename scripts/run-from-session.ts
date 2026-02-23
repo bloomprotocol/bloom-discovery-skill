@@ -154,7 +154,7 @@ async function main() {
 }
 
 function formatResult(result: any): void {
-  const { identityData, agentWallet, recommendations, discoveries, mode, dimensions, dashboardUrl } = result;
+  const { identityData, recommendations, discoveries, mode, dimensions, dashboardUrl } = result;
 
   // Clean Markdown format that OpenClaw won't reformat
   console.log('\n---\n');
@@ -254,16 +254,8 @@ function formatResult(result: any): void {
     console.log('');
   }
 
-  // Wallet info with marketing message
-  console.log('## 🤖 Your Agent Wallet\n');
-  console.log(`- **Network**: ${agentWallet?.network || 'Base'}`);
-  console.log('- **Status**: ✅ Generated and registered\n');
-  console.log('> 💡 Use your agent wallet to tip creators!');
-  console.log('> ⚠️ Tipping features coming soon');
-  console.log('> 🔒 Do not deposit funds yet\n');
-
   console.log('---\n');
-  console.log('*🌸 Built by [Bloom Protocol](https://bloomprotocol.ai) · Powered by @openclaw @coinbase @base*\n');
+  console.log('*🌸 Built by [Bloom Protocol](https://bloomprotocol.ai) · Powered by @openclaw*\n');
 }
 
 function getPersonalityEmoji(type: string): string {

@@ -54,7 +54,7 @@ async function main() {
 }
 
 function formatResult(result: any): void {
-  const { identityData, recommendations, discoveries, dashboardUrl, actions } = result;
+  const { identityData, recommendations, discoveries, dashboardUrl } = result;
 
   console.log('');
   console.log(`${getPersonalityEmoji(identityData.personalityType)} You're ${identityData.personalityType}`);
@@ -65,13 +65,11 @@ function formatResult(result: any): void {
   }
   console.log('');
 
-  const mintedOnBase = actions?.mint?.txHash;
-
   if (recommendations?.length > 0 && dashboardUrl) {
-    console.log(`\u2728 Your Taste Card is ready${mintedOnBase ? ' \u2014 minted on Base' : ''}`);
+    console.log(`\u2728 Your Identity Card is ready`);
     console.log(`\u2192 See your card & recommendations: ${dashboardUrl}`);
   } else if (dashboardUrl) {
-    console.log(`\u2728 Your Taste Card is ready${mintedOnBase ? ' \u2014 minted on Base' : ''}`);
+    console.log(`\u2728 Your Identity Card is ready`);
     console.log(`\u2192 See your card: ${dashboardUrl}`);
   }
 
