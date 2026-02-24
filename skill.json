@@ -1,7 +1,7 @@
 {
-  "name": "bloom-taste-finder",
-  "version": "2.0.0",
-  "description": "Discover your builder taste from conversations. Reveals your type (Visionary, Explorer, Cultivator, Optimizer, Innovator) + personalized tool recommendations from 3 sources. Built with Coinbase AgentKit on Base.",
+  "name": "bloom-discovery",
+  "version": "3.0.0",
+  "description": "Discover your builder identity and browse OpenClaw skills. Generates your Bloom Identity Card (Visionary, Explorer, Cultivator, Optimizer, Innovator) with personalized recommendations, and lets you search/browse the skill catalog.",
   "homepage": "https://bloomprotocol.ai",
   "author": "Bloom Protocol",
   "license": "MIT",
@@ -11,8 +11,17 @@
       "generate my bloom identity",
       "create my identity card",
       "analyze my supporter profile",
-      "mint my bloom card",
-      "discover my personality"
+      "create my bloom card",
+      "discover my personality",
+      "show me skills",
+      "find skills",
+      "search skills",
+      "browse skills",
+      "recommend skills",
+      "what skills are available",
+      "skill categories",
+      "list categories",
+      "what categories"
     ],
     "execution": {
       "type": "script",
@@ -78,6 +87,8 @@
   "permissions": {
     "network": [
       "https://api.bloomprotocol.ai",
+      "https://api.bloomprotocol.ai/skills",
+      "https://api.bloomprotocol.ai/skills/categories",
       "https://base-sepolia.blockscout.com",
       "https://base.blockscout.com",
       "https://x402.bloomprotocol.ai"

@@ -425,23 +425,160 @@ export class BloomIdentitySkillV2 {
   }
 }
 
-/**
- * Skill registration for OpenClaw
- */
-export const bloomIdentitySkillV2 = {
-  name: 'bloom-identity',
-  description: 'Generate your personalized Bloom Identity Card and discover matching projects',
-  version: '2.1.0',
+// ── Discovery mode helpers ──────────────────────────────────────────
+
+/** Detect which mode the user wants based on their trigger / message text. */
+function detectMode(text: string): 'identity' | 'browse' | 'categories' {
+  const lower = text.toLowerCase();
+  if (/categor/i.test(lower)) return 'categories';
+  if (/show|find|search|browse|recommend|available|skills?\s*(for|about|in)/i.test(lower))
+    return 'browse';
+  return 'identity';
+}
+
+/** Known display categories (kept in sync with backend). */
+const DISPLAY_CATEGORIES = [
+  'Agent & MCP', 'AI Tools', 'Development', 'Productivity',
+  'Design', 'Marketing', 'Crypto', 'Finance', 'Wellness', 'Education',
+];
+
+/** Extract category + freetext search from a natural-language query. */
+function parseSearchIntent(text: string): { category?: string; search?: string } {
+  const lower = text.toLowerCase();
+  // Try exact category match first
+  for (const cat of DISPLAY_CATEGORIES) {
+    if (lower.includes(cat.toLowerCase())) return { category: cat };
+  }
+  // Common aliases
+  if (/\bmcp\b/i.test(lower)) return { category: 'Agent & MCP' };
+  if (/\bai\b/i.test(lower)) return { category: 'AI Tools' };
+  if (/\bdev|coding|code\b/i.test(lower)) return { category: 'Development' };
+  if (/\bcrypto|web3|defi\b/i.test(lower)) return { category: 'Crypto' };
+  // Fallback: extract freetext after common verbs
+  const match = lower.match(/(?:find|search|show me|browse)\s+(?:skills?\s+)?(?:for\s+|about\s+|in\s+)?(.+)/i);
+  if (match) return { search: match[1].trim() };
+  return {};
+}
+
+/** Call GET /skills with optional filters. */
+async function browseSkills(intent: { category?: string; search?: string }): Promise<string> {
+  const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
+  const params = new URLSearchParams();
+  if (intent.category) params.set('category', intent.category);
+  if (intent.search) params.set('search', intent.search);
+  params.set('limit', '10');
+  params.set('sort', 'score');
+
+  const res = await fetch(`${apiBase}/skills?${params}`);
+  if (!res.ok) throw new Error(`Skills API returned ${res.status}`);
+  const body = await res.json() as any;
+  const skills: Array<{ name: string; slug: string; description: string; stars: number; source: string; url: string }> = body.data?.skills || [];
+
+  return formatBrowseResults(skills, intent);
+}
+
+/** Call GET /skills/categories. */
+async function fetchCategories(): Promise<string> {
+  const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
+  const res = await fetch(`${apiBase}/skills/categories`);
+  if (!res.ok) throw new Error(`Categories API returned ${res.status}`);
+  const body = await res.json() as any;
+  const categories: Array<{ name: string; count: number }> = body.data?.categories || [];
+
+  return formatCategoriesList(categories);
+}
+
+function formatBrowseResults(
+  skills: Array<{ name: string; slug: string; description: string; stars: number; source: string; url: string }>,
+  intent: { category?: string; search?: string },
+): string {
+  if (skills.length === 0) {
+    const query = intent.search || intent.category || 'your search';
+    return `No skills found for "${query}". Try browsing by category — say "skill categories" to see what's available.`;
+  }
+
+  const heading = intent.category
+    ? `**${intent.category}** skills`
+    : intent.search
+      ? `Skills matching "${intent.search}"`
+      : 'Top skills';
+
+  let msg = `🔍 ${heading} (${skills.length} results)\n`;
+  for (const s of skills) {
+    const stars = s.stars > 0 ? ` ⭐ ${s.stars}` : '';
+    msg += `\n- **${s.name}**${stars}\n  ${s.description?.slice(0, 120) || ''}\n  ${s.url}`;
+  }
+
+  msg += `\n\n💡 Say "show me [category]" to filter, or "generate my bloom identity" to get personalized recommendations.`;
+  return msg;
+}
+
+function formatCategoriesList(
+  categories: Array<{ name: string; count: number }>,
+): string {
+  if (categories.length === 0) return 'No categories available yet.';
+
+  let msg = '📂 **Skill Categories**\n';
+  for (const c of categories.sort((a, b) => b.count - a.count)) {
+    msg += `\n- **${c.name}** — ${c.count} skills`;
+  }
+  msg += `\n\n💡 Say "show me [category name]" to browse skills in a category.`;
+  return msg;
+}
+
+// ── Skill registration for OpenClaw ─────────────────────────────────
+
+export const bloomDiscoverySkill = {
+  name: 'bloom-discovery',
+  description: 'Generate your personalized Bloom Identity Card, browse skills, and discover matching projects',
+  version: '3.0.0',
+  aliases: ['bloom-identity'],
 
   triggers: [
+    // Identity triggers (existing)
     'generate my bloom identity',
     'create my identity card',
     'analyze my supporter profile',
     'create my bloom card',
     'discover my personality',
+    // Browse triggers (new)
+    'show me skills',
+    'find skills',
+    'search skills',
+    'browse skills',
+    'recommend skills',
+    'what skills are available',
+    // Category triggers (new)
+    'skill categories',
+    'list categories',
+    'what categories',
   ],
 
   async execute(context: any) {
+    const mode = detectMode(context.trigger || context.message || '');
+
+    // ── Categories mode ──
+    if (mode === 'categories') {
+      try {
+        const msg = await fetchCategories();
+        return { message: msg, data: { mode: 'categories' } };
+      } catch (err: any) {
+        return { message: `Failed to fetch categories: ${err.message}`, data: { mode: 'categories', error: true } };
+      }
+    }
+
+    // ── Browse mode ──
+    if (mode === 'browse') {
+      try {
+        const intent = parseSearchIntent(context.trigger || context.message || '');
+        const msg = await browseSkills(intent);
+        return { message: msg, data: { mode: 'browse', ...intent } };
+      } catch (err: any) {
+        return { message: `Failed to browse skills: ${err.message}`, data: { mode: 'browse', error: true } };
+      }
+    }
+
+    // ── Identity mode (existing, unchanged) ──
     const skill = new BloomIdentitySkillV2();
 
     // Check if this is a response to manual Q&A
@@ -458,22 +595,25 @@ export const bloomIdentitySkillV2 = {
         // Return questions to user
         return {
           message: result.manualQuestions,
-          data: { awaitingManualInput: true },
+          data: { awaitingManualInput: true, mode: 'identity' },
         };
       }
 
       return {
         message: `❌ Failed to generate identity: ${result.error}`,
-        data: result,
+        data: { ...result, mode: 'identity' },
       };
     }
 
     return {
       message: formatSuccessMessage(result),
-      data: result,
+      data: { ...result, mode: 'identity' },
     };
   },
 };
+
+/** @deprecated Use bloomDiscoverySkill instead */
+export const bloomIdentitySkillV2 = bloomDiscoverySkill;
 
 /**
  * Format success message for user
@@ -514,4 +654,4 @@ function getPersonalityEmoji(type: PersonalityType): string {
   return emojiMap[type] || '🎴';
 }
 
-export default bloomIdentitySkillV2;
+export default bloomDiscoverySkill;
