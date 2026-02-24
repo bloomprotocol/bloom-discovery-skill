@@ -10,6 +10,7 @@
  */
 
 import { CATEGORY_KEYWORDS } from '../types/categories';
+import { fetchWithTimeout } from '../utils/disk-cache';
 
 const CLAWHUB_API_BASE = 'https://clawhub.ai/api/v1';
 
@@ -60,7 +61,7 @@ export class ClawHubClient {
     try {
       // Call ClawHub search API
       const url = `${CLAWHUB_API_BASE}/search?q=${encodeURIComponent(query)}&limit=${limit}`;
-      const response = await fetch(url);
+      const response = await fetchWithTimeout(url, { timeoutMs: 5_000 });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -121,7 +122,7 @@ export class ClawHubClient {
   async getSkillDetails(slug: string): Promise<ClawHubSkill | null> {
     try {
       const url = `${CLAWHUB_API_BASE}/skills/${encodeURIComponent(slug)}`;
-      const response = await fetch(url);
+      const response = await fetchWithTimeout(url, { timeoutMs: 3_000 });
 
       if (!response.ok) {
         if (response.status === 404) {

@@ -11,6 +11,7 @@
  */
 
 import { containsBlockedKeyword } from '../types/categories';
+import { fetchWithTimeout, diskCacheGet, diskCacheSet } from '../utils/disk-cache';
 
 const SKILL_REPOS = [
   {
@@ -79,9 +80,10 @@ export interface ClaudeCodeSearchOptions {
  *
  * Fetches and parses Claude Code skills from GitHub repositories
  */
+const CLAUDE_CODE_CACHE_NS = 'claude-code-skills';
+const CLAUDE_CODE_CACHE_TTL = 1000 * 60 * 60 * 6; // 6 hours
+
 export class ClaudeCodeClient {
-  private cache: Map<string, ClaudeCodeSkill[]> = new Map();
-  private cacheExpiry: number = 1000 * 60 * 60; // 1 hour
 
   /**
    * Get recommendations based on user's categories
@@ -113,11 +115,10 @@ export class ClaudeCodeClient {
    * Fetch skills from all GitHub repositories
    */
   private async fetchAllSkills(): Promise<ClaudeCodeSkill[]> {
-    const cacheKey = 'all_skills';
-    const cached = this.cache.get(cacheKey);
-
+    // Check disk cache (survives across CLI invocations)
+    const cached = await diskCacheGet<ClaudeCodeSkill[]>(CLAUDE_CODE_CACHE_NS, 'all_skills');
     if (cached) {
-      console.log('📦 Using cached Claude Code skills');
+      console.log('📦 Using disk-cached Claude Code skills');
       return cached;
     }
 
@@ -131,9 +132,8 @@ export class ClaudeCodeClient {
     const allSkills = skillsArrays.flat();
     const uniqueSkills = this.deduplicateSkills(allSkills);
 
-    // Cache results
-    this.cache.set(cacheKey, uniqueSkills);
-    setTimeout(() => this.cache.delete(cacheKey), this.cacheExpiry);
+    // Persist to disk cache (6 hr TTL) — fire-and-forget, non-fatal
+    diskCacheSet(CLAUDE_CODE_CACHE_NS, 'all_skills', uniqueSkills, CLAUDE_CODE_CACHE_TTL).catch(() => {});
 
     console.log(`✅ Fetched ${uniqueSkills.length} unique skills from ${SKILL_REPOS.length} repos`);
     return uniqueSkills;
@@ -146,7 +146,8 @@ export class ClaudeCodeClient {
     try {
       // Fetch README from GitHub API
       const url = `https://api.github.com/repos/${repo.owner}/${repo.repo}/readme`;
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
+        timeoutMs: 5_000,
         headers: {
           'Accept': 'application/vnd.github.v3.raw',
           'User-Agent': 'Bloom-Identity-Skill',

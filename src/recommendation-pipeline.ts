@@ -17,6 +17,7 @@ import {
   DEFAULT_FALLBACK_CATEGORIES,
   containsBlockedKeyword,
 } from './types/categories';
+import { fetchWithTimeout, diskCacheGet, diskCacheSet } from './utils/disk-cache';
 
 export interface RefreshIdentityInput {
   mainCategories: string[];
@@ -108,29 +109,66 @@ function normalizeToCanonical(categories: string[]): string[] {
 // ─── GitHub cross-check (verify skill exists in openclaw/skills monorepo) ───
 
 const GITHUB_SKILLS_REPO = 'openclaw/skills';
+const GITHUB_VERIFY_CACHE_NS = 'github-verify';
+const GITHUB_VERIFY_TTL = 1000 * 60 * 60 * 24; // 24 hours
 
 /**
  * Verify a ClawHub skill exists in the openclaw/skills GitHub monorepo.
- * Path: skills/{owner.toLowerCase()}/{slug}/SKILL.md
- * Uses unauthenticated GitHub contents API (60 req/hr, enough for 20 checks).
+ * Results are disk-cached for 24 hours to avoid burning the 60 req/hr rate limit.
  */
 async function verifySkillOnGitHub(owner: string, slug: string): Promise<boolean> {
+  const cacheKey = `${owner.toLowerCase()}/${slug}`;
+
+  // Check disk cache first
+  const cached = await diskCacheGet<boolean>(GITHUB_VERIFY_CACHE_NS, cacheKey);
+  if (cached !== undefined) return cached;
+
   try {
     const path = `skills/${owner.toLowerCase()}/${slug}/SKILL.md`;
     const url = `https://api.github.com/repos/${GITHUB_SKILLS_REPO}/contents/${path}`;
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
+      timeoutMs: 3_000,
       method: 'HEAD',
       headers: {
         'User-Agent': 'Bloom-Identity-Skill',
         'Accept': 'application/vnd.github.v3+json',
       },
     });
-    return response.status === 200;
+    const result = response.status === 200;
+    // Fire-and-forget — cache write failure is non-fatal
+    diskCacheSet(GITHUB_VERIFY_CACHE_NS, cacheKey, result, GITHUB_VERIFY_TTL).catch(() => {});
+    return result;
   } catch {
-    // Network error — treat as unverified
+    // Network/timeout error — treat as unverified, don't cache failures
     return false;
   }
 }
+
+// ─── Concurrency limiter ─────────────────────────────────────────────────
+
+function createSemaphore(concurrency: number) {
+  let running = 0;
+  const queue: (() => void)[] = [];
+
+  return async function <T>(fn: () => Promise<T>): Promise<T> {
+    if (running >= concurrency) {
+      await new Promise<void>(resolve => queue.push(resolve));
+    }
+    running++;
+    try {
+      return await fn();
+    } finally {
+      running--;
+      queue.shift()?.();
+    }
+  };
+}
+
+const limitGitHub = createSemaphore(5);
+
+// ─── Pipeline timeout ────────────────────────────────────────────────────
+
+const PIPELINE_TIMEOUT_MS = 25_000;
 
 // ─── Main pipeline ──────────────────────────────────────────────────────
 
@@ -139,6 +177,28 @@ async function verifySkillOnGitHub(owner: string, slug: string): Promise<boolean
  * Stateless — creates fresh client instances each call.
  */
 export async function refreshRecommendations(
+  identity: RefreshIdentityInput,
+): Promise<SkillRecommendation[]> {
+  // Wrap entire pipeline in a timeout — graceful degradation on slow networks
+  let timer: ReturnType<typeof setTimeout>;
+  const innerPromise = refreshRecommendationsInner(identity);
+
+  // Prevent unhandled rejection if inner rejects after timeout wins
+  innerPromise.catch(() => {});
+
+  const timeoutPromise = new Promise<SkillRecommendation[]>(resolve => {
+    timer = setTimeout(() => {
+      console.warn(`[recommendation-pipeline] Timed out after ${PIPELINE_TIMEOUT_MS / 1000}s — returning empty`);
+      resolve([]);
+    }, PIPELINE_TIMEOUT_MS);
+  });
+
+  const result = await Promise.race([innerPromise, timeoutPromise]);
+  clearTimeout(timer!);
+  return result;
+}
+
+async function refreshRecommendationsInner(
   identity: RefreshIdentityInput,
 ): Promise<SkillRecommendation[]> {
   const claudeCodeClient = createClaudeCodeClient();
@@ -234,20 +294,21 @@ async function getClawHubRecommendations(
 
     // 2. For each result, fetch details first (search results don't include owner)
     //    then GitHub cross-check with the owner from details
+    //    Concurrency-limited to protect GitHub's 60 req/hr rate limit
     const verifiedSkills = await Promise.all(
       rawSkills.map(async (skill): Promise<SkillRecommendation | null> => {
         // Step A: Fetch full details (includes owner, stats, moderation)
         const details = await client.getSkillDetails(skill.slug).catch(() => null);
         if (!details) return null;
 
-        // Step B: GitHub cross-check using owner from details
+        // Step B: GitHub cross-check using owner from details (rate-limited)
         const owner = details.creator;
         if (!owner) {
           console.log(`[clawhub] Skipped ${skill.slug}: no owner`);
           return null;
         }
 
-        const isVerified = await verifySkillOnGitHub(owner, skill.slug);
+        const isVerified = await limitGitHub(() => verifySkillOnGitHub(owner, skill.slug));
         if (!isVerified) {
           console.log(`[clawhub] Skipped ${skill.slug}: GitHub cross-check failed (owner: ${owner})`);
           return null;
