@@ -154,7 +154,7 @@ the hype and focuses on real-world impact.
 
 ```bash
 # Clone or download the skill
-git clone https://github.com/unicornbloom/bloom-identity-skill.git
+git clone https://gitlab.com/bloom-protocol/bloom-discovery-skill.git
 
 # Install dependencies
 cd bloom-identity-skill

@@ -176,7 +176,7 @@ clawhub install bloom-taste-finder
 ```bash
 # 1. Clone the repo
 cd ~/.openclaw/workspace
-git clone https://github.com/Bloom-Protocol/bloom-discovery-skill.git
+git clone https://gitlab.com/bloom-protocol/bloom-discovery-skill.git
 cd bloom-discovery-skill
 
 # 2. Install dependencies
@@ -254,7 +254,7 @@ Your identity card is stored on Bloom Protocol to power your shareable dashboard
 - `bloomprotocol.ai` - Dashboard hosting
 - `clawhub.ai` - Skill recommendations (optional)
 
-**Open Source**: All code is public at [github.com/Bloom-Protocol/bloom-discovery-skill](https://github.com/Bloom-Protocol/bloom-discovery-skill) for security audits.
+**Open Source**: All code is public at [gitlab.com/bloom-protocol/bloom-discovery-skill](https://gitlab.com/bloom-protocol/bloom-discovery-skill) for security audits.
 
 ## 🔍 How to Find Skills You'll Love
 

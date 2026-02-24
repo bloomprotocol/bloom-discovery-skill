@@ -2,7 +2,7 @@
 
 **Understand how you learn, decide, and build — then get the right tools for the AI era.**
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue)](https://github.com/Bloom-Protocol/bloom-discovery-skill)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue)](https://gitlab.com/bloom-protocol/bloom-discovery-skill)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-Compatible-green)](https://openclaw.ai)
 [![ClawHub](https://img.shields.io/badge/ClawHub-Published-purple)](https://clawhub.ai/unicornbloom/bloom-taste-finder)
 [![License](https://img.shields.io/badge/license-MIT-orange)](LICENSE)
@@ -95,7 +95,7 @@ Bloom surfaces insights you might not see yourself, in priority order:
 ### Developers
 
 ```bash
-git clone https://github.com/Bloom-Protocol/bloom-discovery-skill.git
+git clone https://gitlab.com/bloom-protocol/bloom-discovery-skill.git
 cd bloom-discovery-skill
 npm install
 cp .env.example .env
@@ -146,7 +146,7 @@ NETWORK=base-mainnet
 
 - **Homepage**: [bloomprotocol.ai](https://bloomprotocol.ai)
 - **ClawHub**: [clawhub.ai/unicornbloom/bloom-taste-finder](https://clawhub.ai/unicornbloom/bloom-taste-finder)
-- **GitHub**: [github.com/Bloom-Protocol/bloom-discovery-skill](https://github.com/Bloom-Protocol/bloom-discovery-skill)
+- **Source**: [gitlab.com/bloom-protocol/bloom-discovery-skill](https://gitlab.com/bloom-protocol/bloom-discovery-skill)
 - **Dashboard**: [bloomprotocol.ai/agents](https://bloomprotocol.ai/agents)
 
 ---

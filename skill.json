@@ -89,7 +89,7 @@
     "steps": [
       {
         "action": "clone",
-        "source": "https://github.com/unicornbloom/bloom-identity-skill.git"
+        "source": "https://gitlab.com/bloom-protocol/bloom-discovery-skill.git"
       },
       {
         "action": "install_dependencies",
