@@ -12,7 +12,7 @@
  * They are independent of personality type (which represents HOW the user thinks).
  *
  * 14 fine-grained categories match the backend skill-catalog.service.ts exactly.
- * 10 display categories match the frontend skill-category-definitions.ts.
+ * 9 display categories match the frontend skill-category-definitions.ts.
  */
 
 // ─── Fine-grained categories (backend-aligned) ─────────────────────────
@@ -132,8 +132,7 @@ export const DISPLAY_CATEGORY_MAP: Record<string, CanonicalCategory[]> = {
   'Productivity': ['Productivity'],
   'Design': ['Design'],
   'Marketing': ['Marketing'],
-  'Crypto': ['Crypto'],
-  'Finance': ['Finance'],
+  'Crypto & Finance': ['Crypto', 'Finance'],
   'Wellness': ['Wellness'],
   'Education': ['Education', 'Lifestyle'],
 };
