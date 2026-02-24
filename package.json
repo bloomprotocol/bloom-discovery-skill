@@ -14,6 +14,7 @@
     "build:pipeline": "esbuild src/recommendation-pipeline.ts --bundle --platform=node --outfile=dist/recommendation-pipeline.js --format=cjs",
     "build:discovery": "esbuild src/discovery-sync.ts --bundle --platform=node --outfile=dist/discovery-sync.js --format=cjs",
     "build:all": "npm run build:pipeline && npm run build:discovery",
+    "prepare": "npm run build:all",
     "test": "echo \"No tests yet\"",
     "test:conversation": "ts-node scripts/test-conversation-analysis.ts",
     "test:cdp-wallet": "ts-node scripts/test-cdp-wallet.ts",
