@@ -38,6 +38,12 @@ async function main() {
     const ok = result.personalityType === expected;
     const icon = ok ? '✅' : '❌';
     console.log(`${icon} ${file}: ${result.personalityType} (expected: ${expected}) — C=${result.dimensions.conviction}, I=${result.dimensions.intuition}, Cont=${result.dimensions.contribution}`);
+    if (result.hiddenInsight) {
+      console.log(`   🔍 [${result.hiddenInsight.patternType}] ${result.hiddenInsight.brief}`);
+      console.log(`   📖 ${result.hiddenInsight.narrative}`);
+    } else {
+      console.log(`   🔍 (no hidden insight detected)`);
+    }
     if (ok) pass++;
     else fail++;
   }

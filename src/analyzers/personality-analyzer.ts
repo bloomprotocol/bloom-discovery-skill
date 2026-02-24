@@ -165,7 +165,7 @@ export class PersonalityAnalyzer {
 
     // Step 8: Detect hidden pattern insight (skip if low confidence)
     let hiddenInsight: HiddenPatternInsight | undefined;
-    if (confidence >= 30) {
+    if (confidence > 30) {
       hiddenInsight = this.detectHiddenInsight(
         dimensions,
         personalityType,
@@ -662,7 +662,7 @@ export class PersonalityAnalyzer {
    *   3. Episode Dominance  — one behavioral pattern dominates (story-driven)
    *   4. Stealth Contributor — high contribution without Cultivator label
    *   5. Strength Synergy   — known powerful strength combos
-   *   6. Boundary Dweller   — conviction/intuition within ±4 of threshold (catch-all)
+   *   6. Boundary Dweller   — conviction/intuition within ±8 of threshold (catch-all)
    */
   private detectHiddenInsight(
     dimensions: DimensionScores,
@@ -724,6 +724,11 @@ export class PersonalityAnalyzer {
           'early-adopter': "You're always first in line — your curiosity outpaces caution",
           decision: 'You make deliberate choices — every move is considered',
           cautious: 'You play the long game — patience and protection are your strategy',
+          'wait-and-see': 'You watch, wait, and move only when the timing is right — patience is your strategy',
+          exploring: "You're always exploring — curiosity drives you to cover new ground constantly",
+          discovery: 'Serendipity is your superpower — you keep finding things others miss',
+          'goal-setting': 'You set clear targets and work toward them — structure is your compass',
+          achieved: 'You hit what you aim for — your track record of completion speaks for itself',
         };
         const desc = episodeDescriptions[topLabel] || `Your "${topLabel}" pattern dominates your story`;
         return {
@@ -765,14 +770,20 @@ export class PersonalityAnalyzer {
     }
 
     // 6. Boundary Dweller — conviction or intuition within ±4 of the 50 threshold (tight catch-all)
+    // Labels depend on both axes: e.g. conviction boundary → Explorer or Innovator depending on intuition
+    const convictionLow = dimensions.intuition >= 50 ? 'Explorer' : 'Innovator';
+    const convictionHigh = dimensions.intuition >= 50 ? 'Visionary' : 'Optimizer';
+    const intuitionLow = dimensions.conviction >= 50 ? 'Optimizer' : 'Innovator';
+    const intuitionHigh = dimensions.conviction >= 50 ? 'Visionary' : 'Explorer';
+
     const boundaryChecks = [
-      { name: 'conviction', value: dimensions.conviction, low: 'Explorer', high: 'Visionary' },
-      { name: 'intuition', value: dimensions.intuition, low: 'Optimizer', high: 'Visionary' },
+      { name: 'conviction', value: dimensions.conviction, low: convictionLow, high: convictionHigh },
+      { name: 'intuition', value: dimensions.intuition, low: intuitionLow, high: intuitionHigh },
     ];
     for (const check of boundaryChecks) {
       const distFromThreshold = Math.abs(check.value - 50);
-      if (distFromThreshold <= 4 && distFromThreshold > 0) {
-        const side = check.value >= 50 ? check.high : check.low;
+      if (distFromThreshold <= 8 && distFromThreshold > 0) {
+        const side = check.value >= 50 ? check.low : check.high;
         return {
           brief: `You're ${distFromThreshold} points from ${side} territory — that duality is a superpower`,
           narrative: `Your ${check.name} score sits right at the boundary (${check.value}/100). Most people land firmly on one side, but you operate in the liminal zone — able to flex between both modes. This adaptability is rare and valuable.`,
