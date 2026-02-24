@@ -26,7 +26,8 @@ export type { SkillRecommendation, FeedbackData, UserMdSignals };
 export interface IdentityData {
   personalityType: PersonalityType;
   customTagline: string;
-  customDescription: string;
+  customDescription: string;          // Short (2-3 sentences) — card view
+  customLongDescription?: string;     // Full (4-5 sentences) — dashboard view
   mainCategories: string[];
   subCategories: string[];
   dimensions?: {
@@ -215,6 +216,7 @@ export class BloomIdentitySkillV2 {
               personalityType: analysis.personalityType,
               customTagline: analysis.tagline,
               customDescription: analysis.description,
+              customLongDescription: analysis.longDescription,
               mainCategories: merged.mainCategories,
               subCategories: [...analysis.detectedInterests, ...merged.subCategories.filter(
                 s => !analysis.detectedInterests.includes(s),
@@ -273,6 +275,7 @@ export class BloomIdentitySkillV2 {
           personalityType: manualResult.personalityType,
           customTagline: manualResult.tagline,
           customDescription: manualResult.description,
+          customLongDescription: manualResult.description, // Manual QA uses same text for both
           mainCategories: manualResult.mainCategories,
           subCategories: manualResult.subCategories,
           tasteSpectrums: manualResult.tasteSpectrums,
@@ -303,6 +306,7 @@ export class BloomIdentitySkillV2 {
         personalityType: identityData!.personalityType,
         tagline: identityData!.customTagline,
         description: identityData!.customDescription,
+        longDescription: identityData!.customLongDescription,
         mainCategories: identityData!.mainCategories,
         subCategories: identityData!.subCategories,
         confidence: dataQuality,
@@ -488,7 +492,7 @@ function formatSuccessMessage(result: any): string {
   }
 
   msg += `\n${emoji} **${identityData.personalityType}** — "${identityData.customTagline}"`;
-  msg += `\n\n${identityData.customDescription}`;
+  msg += `\n\n${identityData.customLongDescription || identityData.customDescription}`;
 
   if (identityData.hiddenInsight) {
     msg += `\n\n🔍 *${identityData.hiddenInsight.brief}*`;

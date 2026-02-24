@@ -61,7 +61,8 @@ export interface DimensionScores {
 export interface PersonalityAnalysis {
   personalityType: PersonalityType;
   tagline: string;
-  description: string;
+  description: string;          // Short (2-3 sentences) — for card view with limited space
+  longDescription: string;      // Full (4-5 sentences) — for dashboard with no space limit
   detectedInterests: string[];
   detectedCategories: string[]; // Top categories for tagline generation
   dimensions: DimensionScores;
@@ -157,8 +158,9 @@ export class PersonalityAnalyzer {
     // Step 5: Extract detailed interests (needed by description composer)
     const detectedInterests = this.extractInterests(userData);
 
-    // Step 6: Generate personalized description (dynamically composed from spectrums + interests + strengths)
-    const description = this.composeTasteDescription(personalityType, detectedCategories, dimensions, strengths, detectedInterests);
+    // Step 6: Generate personalized description (behavioral insights from spectrums + strengths + preferences)
+    const preferences = userData.conversationMemory?.preferences || [];
+    const { description, longDescription } = this.composeTasteDescription(personalityType, dimensions, strengths, preferences);
 
     // Step 7: Calculate confidence (based on data sources)
     const confidence = this.calculateConfidence(userData);
@@ -186,6 +188,7 @@ export class PersonalityAnalyzer {
       personalityType,
       tagline,
       description,
+      longDescription,
       detectedInterests,
       detectedCategories,
       dimensions,
@@ -590,178 +593,130 @@ export class PersonalityAnalyzer {
   }
 
   /**
-   * Compose dynamic 4-sentence description from personality type, spectrums,
-   * detected interests, strengths, and categories.
+   * Compose dynamic 4-sentence behavioral description from personality type,
+   * dimension spectrums, strengths, and preferences.
    *
    * Sentence structure:
-   *   1. Personality + specific interests (concrete, not generic)
-   *   2. Strength + taste combo (how you learn/decide)
-   *   3. Unique pattern / distinctive observation (extreme or breadth)
-   *   4. Forward-looking, personality-flavored prediction
+   *   1. How you make decisions  (decision spectrum, 40/60 thresholds, preference-differentiated mid)
+   *   2. How you learn           (learning spectrum, 40/60 thresholds, preference-differentiated mid)
+   *   3. Attitude toward uncertainty (novelty × risk quadrant, 50 threshold, 45–55 center band)
+   *   4. AI age positioning      (PersonalityType + top strength)
    */
   private composeTasteDescription(
     type: PersonalityType,
-    categories: string[],
     dimensions: DimensionScores,
     strengths: string[],
-    interests: string[],
-  ): string {
+    preferences: string[],
+  ): { description: string; longDescription: string } {
     const spectrums = dimensions.tasteSpectrums || { learning: 50, decision: 50, novelty: 50, risk: 50 };
-    const topCategory = categories[0] || 'Tech';
-    const topInterests = interests.slice(0, 2);
-
-    // --- Sentence 1: Personality + specific interests ---
-    let sentence1: string;
-    const interestPhrase = topInterests.length >= 2
-      ? `${topInterests[0]} and ${topInterests[1]}`
-      : topInterests[0] || topCategory;
-
-    const typeOpeners: Record<string, string> = {
-      [PersonalityType.THE_VISIONARY]: `You back bold ideas in ${interestPhrase} before they're obvious.`,
-      [PersonalityType.THE_EXPLORER]: `Your curiosity pulls you across ${interestPhrase} — every rabbit hole leads to a new connection.`,
-      [PersonalityType.THE_CULTIVATOR]: `You don't just follow ${interestPhrase} — you grow the communities around them.`,
-      [PersonalityType.THE_OPTIMIZER]: `You cut through noise in ${interestPhrase} to find what actually works.`,
-      [PersonalityType.THE_INNOVATOR]: `You spot patterns in ${interestPhrase} that others won't see for months.`,
-    };
-    sentence1 = typeOpeners[type] || typeOpeners[PersonalityType.THE_INNOVATOR];
-
-    // --- Sentence 2: Strength + taste combo ---
-    let sentence2: string;
     const topStrength = strengths[0];
 
-    if (topStrength) {
-      // Pick correct article (a/an) for the strength label
-      const article = /^[aeiou]/i.test(topStrength) ? 'An' : 'A';
-      // Weave strength into a learning/decision taste sentence
-      if (spectrums.learning > 65 && spectrums.decision > 65) {
-        sentence2 = `${article} ${topStrength} who studies deeply and decides carefully — nothing escapes your analysis.`;
-      } else if (spectrums.learning < 35 && spectrums.decision < 35) {
-        sentence2 = `${article} ${topStrength} who trusts instinct over theory — you ship first and refine through feedback.`;
-      } else if (spectrums.learning > 65) {
-        sentence2 = `${article} ${topStrength} who researches deeply before acting — your preparation is your edge.`;
-      } else if (spectrums.learning < 35) {
-        sentence2 = `${article} ${topStrength} who learns by doing — you prototype first and refine through feedback.`;
-      } else if (spectrums.decision > 65) {
-        sentence2 = `${article} ${topStrength} who weighs every option — deliberate and data-driven in every move.`;
-      } else if (spectrums.decision < 35) {
-        sentence2 = `${article} ${topStrength} who moves on instinct — fast decisions keep you ahead of the curve.`;
-      } else {
-        sentence2 = `${article} ${topStrength} who balances theory and practice — you know when to study deep and when to ship fast.`;
-      }
+    // Helper: check if user has any of the given preference keywords
+    const hasPref = (...keys: string[]) =>
+      preferences.some(p => keys.some(k => p.toLowerCase().includes(k.toLowerCase())));
+
+    // --- Sentence 1: Decision-making (threshold 40/60) ---
+    let sentence1: string;
+    if (spectrums.decision < 40) {
+      sentence1 = "You decide fast and adjust on the fly — instinct-first, unbothered by analysis paralysis.";
+    } else if (spectrums.decision > 60) {
+      sentence1 = "You don't decide until you've mapped every angle — a deliberate approach that means your commitments rarely miss.";
     } else {
-      // No strengths: fall back to spectrum-only sentence
-      if (spectrums.learning > 65 && spectrums.decision > 65) {
-        sentence2 = 'You study deeply and decide carefully — nothing escapes your analysis.';
-      } else if (spectrums.learning < 35 && spectrums.decision < 35) {
-        sentence2 = 'You trust your instincts and learn by doing — ship first, refine later.';
-      } else if (spectrums.learning > 65) {
-        sentence2 = 'You prefer understanding deeply before acting — research is your foundation.';
-      } else if (spectrums.learning < 35) {
-        sentence2 = 'You learn by doing — prototyping and shipping are how you understand the world.';
-      } else if (spectrums.decision > 65) {
-        sentence2 = 'You weigh every option before committing — deliberate and data-driven.';
-      } else if (spectrums.decision < 35) {
-        sentence2 = 'You go with your gut — fast instincts guide your decisions.';
+      // Mid-range: differentiate by preference
+      if (hasPref('data-driven', 'data driven')) {
+        sentence1 = "You blend gut instinct with data — but when the numbers speak clearly, you listen.";
+      } else if (hasPref('community-driven', 'community driven', 'community')) {
+        sentence1 = "Your decisions are shaped by the people around you — you listen first, then commit with confidence.";
+      } else if (hasPref('innovative', 'early stage', 'early-stage')) {
+        sentence1 = "You decide by vision more than convention — when the data is ambiguous, you trust your creative instincts.";
+      } else if (hasPref('user-friendly', 'user friendly', 'ux', 'user experience')) {
+        sentence1 = "You decide with the end user in mind — if it doesn't serve them, the data doesn't matter.";
+      } else if (hasPref('technical', 'open source', 'open-source')) {
+        sentence1 = "You let architecture guide your decisions — good systems design answers most questions before they arise.";
       } else {
-        sentence2 = 'You balance theory and practice, knowing when to study and when to ship.';
+        sentence1 = "You have a rare gear-shifting ability in decisions: gut call when speed matters, careful analysis when stakes are high.";
       }
     }
 
-    // --- Sentence 3: Unique pattern / distinctive observation ---
+    // --- Sentence 2: Learning style (threshold 40/60) ---
+    let sentence2: string;
+    if (spectrums.learning < 40) {
+      sentence2 = "You learn by building — prototypes teach you more in an afternoon than documentation does in a week.";
+    } else if (spectrums.learning > 60) {
+      sentence2 = "You study systems at a depth most people skip — by the time you act, you understand the mechanics others never notice.";
+    } else {
+      // Mid-range: differentiate by preference
+      if (hasPref('data-driven', 'data driven')) {
+        sentence2 = "You learn through measurement — every experiment has a hypothesis, and the results reshape your mental model.";
+      } else if (hasPref('community-driven', 'community driven', 'community')) {
+        sentence2 = "You learn best through dialogue — other people's perspectives accelerate your understanding faster than solo study.";
+      } else if (hasPref('innovative', 'early stage', 'early-stage')) {
+        sentence2 = "You learn by pushing boundaries — the edge cases and failure modes teach you what textbooks skip.";
+      } else if (hasPref('user-friendly', 'user friendly', 'ux', 'user experience')) {
+        sentence2 = "You learn by using — hands-on experience with the end product tells you what documentation can't.";
+      } else if (hasPref('technical', 'open source', 'open-source')) {
+        sentence2 = "You learn by reading the source — understanding the internals is how you build real mastery.";
+      } else {
+        sentence2 = "You toggle between hands-on experiments and deep research, picking whichever gets you to understanding faster.";
+      }
+    }
+
+    // --- Sentence 3: Uncertainty attitude (novelty × risk quadrant) ---
     let sentence3: string;
-    // Check for extreme spectrums first (<25 or >75)
-    const extremes: { key: string; value: number; lowLabel: string; highLabel: string }[] = [];
-    const spectrumEntries = [
-      { key: 'learning', value: spectrums.learning, lowLabel: 'hands-on learner', highLabel: 'deep researcher' },
-      { key: 'decision', value: spectrums.decision, lowLabel: 'instinct-driven', highLabel: 'deliberate analyst' },
-      { key: 'novelty', value: spectrums.novelty, lowLabel: 'early adopter', highLabel: 'patient observer' },
-      { key: 'risk', value: spectrums.risk, lowLabel: 'bold risk-taker', highLabel: 'cautious strategist' },
-    ];
-    for (const entry of spectrumEntries) {
-      if (entry.value < 25 || entry.value > 75) {
-        extremes.push(entry);
-      }
-    }
+    const noveltyCenter = spectrums.novelty >= 45 && spectrums.novelty <= 55;
+    const riskCenter = spectrums.risk >= 45 && spectrums.risk <= 55;
 
-    if (extremes.length > 0) {
-      // Pick the most extreme spectrum
-      const mostExtreme = extremes.sort((a, b) =>
-        Math.max(100 - b.value, b.value) - Math.max(100 - a.value, a.value)
-      )[0];
-      const label = mostExtreme.value < 25 ? mostExtreme.lowLabel : mostExtreme.highLabel;
-      const score = mostExtreme.value < 25 ? (100 - mostExtreme.value) : mostExtreme.value;
-
-      const extremeSentences: Record<string, string[]> = {
-        'hands-on learner': [
-          `Your ${mostExtreme.key} score of ${score} puts you firmly in ${label} territory — you don't just read about things, you build them.`,
-        ],
-        'deep researcher': [
-          `Your ${mostExtreme.key} score of ${score} means you understand systems at a depth most people never reach.`,
-        ],
-        'instinct-driven': [
-          `Your ${mostExtreme.key} score of ${score} says you move fast — by the time others finish their spreadsheets, you've already shipped.`,
-        ],
-        'deliberate analyst': [
-          `Your ${mostExtreme.key} score of ${score} means every decision is backed by evidence — you don't gamble, you calculate.`,
-        ],
-        'early adopter': [
-          `A fearless early adopter — you'll master new tools while others are still reading changelogs.`,
-        ],
-        'patient observer': [
-          `Your patience is strategic — you let others beta-test the hype, then commit to what actually works.`,
-        ],
-        'bold risk-taker': [
-          `Your ${mostExtreme.key} score of ${score} puts you in rare company: you don't just follow trends, you set them.`,
-        ],
-        'cautious strategist': [
-          `Your careful approach protects you from hype cycles — when you finally commit, it's because you've done the homework.`,
-        ],
-      };
-      const options = extremeSentences[label] || [`Your ${mostExtreme.key} style is off the charts — pure ${label}.`];
-      sentence3 = options[0];
-    } else if (categories.length >= 3) {
-      sentence3 = `Your interests span ${categories.slice(0, 3).join(', ')} — you connect dots others miss.`;
-    } else if (interests.length >= 3) {
-      sentence3 = `From ${interests.slice(0, 3).join(' to ')} — your range is your superpower.`;
+    if (noveltyCenter && riskCenter) {
+      // True Center
+      sentence3 = "You read uncertainty case by case — neither reflexively early nor habitually cautious, which lets you match your response to the actual stakes.";
+    } else if (spectrums.novelty < 50 && spectrums.risk < 50) {
+      // Pioneer: early adopter + bold
+      sentence3 = "Uncertainty is where you thrive — you adopt early and bet boldly, comfortable being wrong once to be right first.";
+    } else if (spectrums.novelty < 50 && spectrums.risk >= 50) {
+      // Calculated Early Mover: early adopter + cautious
+      sentence3 = "You show up early but never reckless — first to explore, but you size up the downside before committing.";
+    } else if (spectrums.novelty >= 50 && spectrums.risk < 50) {
+      // Contrarian Patient: wait + bold
+      sentence3 = "You wait for the noise to settle, then move decisively — a patient entry paired with bold conviction once you see the signal.";
     } else {
-      sentence3 = 'Versatile and adaptive, you see opportunities where others see noise.';
+      // Steady Hand: wait + cautious
+      sentence3 = "You let others beta-test the hype and absorb the risk — when you finally move, it's because the evidence left no doubt.";
     }
 
-    // --- Sentence 4: Forward-looking, personality-flavored ---
-    const forwardStatements: Record<string, string[]> = {
-      [PersonalityType.THE_VISIONARY]: [
-        "The projects you're backing today will define tomorrow's infrastructure.",
-        "What looks like a bet to others is just your vision arriving early.",
-        "You don't predict the future — you fund it.",
-      ],
-      [PersonalityType.THE_EXPLORER]: [
-        "Your next discovery is always one conversation away.",
-        "The connections you're making now will compound in ways nobody expects.",
-        "Your breadth isn't distraction — it's your unfair advantage.",
-      ],
-      [PersonalityType.THE_CULTIVATOR]: [
-        "The communities you nurture today become the movements of tomorrow.",
-        "Every piece of feedback you give plants a seed — and your garden is growing.",
-        "You're building something bigger than any single project.",
-      ],
-      [PersonalityType.THE_OPTIMIZER]: [
-        "While others chase hype, you're quietly building the most efficient stack in the room.",
-        "Your systems will outlast every trend cycle.",
-        "The edge you're sharpening now will cut through tomorrow's complexity.",
-      ],
-      [PersonalityType.THE_INNOVATOR]: [
-        "The patterns you're spotting now will be obvious to everyone in six months.",
-        "You're not early — everyone else is late.",
-        "What looks like experimentation is actually architecture for the future.",
-      ],
+    // --- Sentence 4: AI age positioning (PersonalityType + strength) ---
+    let sentence4: string;
+    const strengthLabel = topStrength || '';
+    // Pick correct article (a/an) for the strength label
+    const article = /^[aeiou]/i.test(strengthLabel) ? 'An' : 'A';
+
+    const withStrength: Record<string, string> = {
+      [PersonalityType.THE_VISIONARY]: `${article} ${strengthLabel} in the AI age with a rare edge — you'll back the right tools before the crowd validates them, and that head start compounds.`,
+      [PersonalityType.THE_EXPLORER]: `${article} ${strengthLabel} built for the AI age — your cross-domain curiosity means you'll connect tools and ideas that specialists would never pair.`,
+      [PersonalityType.THE_CULTIVATOR]: `${article} ${strengthLabel} with the AI age's scarcest skill — growing trust around tools that no model can replicate on its own.`,
+      [PersonalityType.THE_OPTIMIZER]: `${article} ${strengthLabel} primed for the AI age — when every field is flooded with options, your ability to filter ruthlessly turns noise into signal.`,
+      [PersonalityType.THE_INNOVATOR]: `${article} ${strengthLabel} who spots structural patterns before they're obvious — in an AI-saturated landscape, that timing is everything.`,
     };
 
-    const variants = forwardStatements[type] || forwardStatements[PersonalityType.THE_INNOVATOR];
-    // Deterministic pick based on top category or strength to avoid randomness
-    const pickIndex = (topCategory.length + (topStrength?.length || 0)) % variants.length;
-    const sentence4 = variants[pickIndex];
+    const withoutStrength: Record<string, string> = {
+      [PersonalityType.THE_VISIONARY]: "In the AI age, your conviction-plus-intuition combination is rare capital — you'll back the right tools before the crowd validates them.",
+      [PersonalityType.THE_EXPLORER]: "The AI age rewards breadth disguised as depth — your cross-domain curiosity means you'll connect tools and ideas specialists would never pair.",
+      [PersonalityType.THE_CULTIVATOR]: "AI amplifies builders, but it can't replace the person who grows trust around a tool — your community instinct is the moat no model can replicate.",
+      [PersonalityType.THE_OPTIMIZER]: "When AI floods every field with options, the edge goes to whoever filters ruthlessly — your data-driven discipline is that edge.",
+      [PersonalityType.THE_INNOVATOR]: "You spot structural patterns before they're obvious — in an AI-saturated landscape, that timing sense is the difference between riding a wave and being the one who called it.",
+    };
 
-    return `${sentence1} ${sentence2} ${sentence3} ${sentence4}`;
+    if (topStrength) {
+      sentence4 = withStrength[type] || withStrength[PersonalityType.THE_INNOVATOR];
+    } else {
+      sentence4 = withoutStrength[type] || withoutStrength[PersonalityType.THE_INNOVATOR];
+    }
+
+    // Card view: concise 2 sentences (decision + learning) — fits line-clamp-3
+    const description = `${sentence1} ${sentence2}`;
+    // Dashboard: full 4 sentences with behavioral depth
+    const longDescription = `${sentence1} ${sentence2} ${sentence3} ${sentence4}`;
+
+    return { description, longDescription };
   }
 
   /**
