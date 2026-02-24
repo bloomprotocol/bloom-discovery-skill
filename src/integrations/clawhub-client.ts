@@ -230,16 +230,28 @@ export class ClawHubClient {
    * Infer categories from slug and description
    */
   private inferCategories(slug: string, description: string): string[] {
-    const categories: string[] = [];
     const text = `${slug} ${description}`.toLowerCase();
+    const scores: Record<string, number> = {};
 
     for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
-      if (keywords.some(keyword => text.includes(keyword))) {
-        categories.push(category);
+      let score = 0;
+      for (const kw of keywords) {
+        const isPhrase = kw.includes(' ') || kw.includes('-');
+        if (isPhrase) {
+          if (text.includes(kw)) score++;
+        } else {
+          if (new RegExp(`\\b${kw}\\b`).test(text)) score++;
+        }
       }
+      if (score > 0) scores[category] = score;
     }
 
-    return categories.length > 0 ? categories : ['General'];
+    const sorted = Object.entries(scores)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([cat]) => cat);
+
+    return sorted.length > 0 ? sorted : ['General'];
   }
 
   /**

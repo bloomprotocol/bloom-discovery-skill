@@ -15,6 +15,7 @@ import { CategoryMapper } from './analyzers/category-mapper';
 import { PersonalityType } from './types/personality';
 import { HiddenPatternInsight, AiPlaybook } from './types/taste-dimensions';
 import { refreshRecommendations, SkillRecommendation } from './recommendation-pipeline';
+import { DISPLAY_CATEGORIES, DISPLAY_CATEGORY_MAP } from './types/categories';
 import { syncDiscoveries, DiscoveryEntry } from './discovery-sync';
 import { parseUserMd, UserMdSignals } from './parsers/user-md-parser';
 import { mergeSignals, MergedSignals, FeedbackData } from './analyzers/signal-merger';
@@ -436,24 +437,26 @@ function detectMode(text: string): 'identity' | 'browse' | 'categories' {
   return 'identity';
 }
 
-/** Known display categories (kept in sync with backend). */
-const DISPLAY_CATEGORIES = [
-  'Agent & MCP', 'AI Tools', 'Development', 'Productivity',
-  'Design', 'Marketing', 'Crypto', 'Finance', 'Wellness', 'Education',
-];
-
 /** Extract category + freetext search from a natural-language query. */
 function parseSearchIntent(text: string): { category?: string; search?: string } {
   const lower = text.toLowerCase();
-  // Try exact category match first
+  // Try exact display category match first (e.g. "Agent & MCP", "AI Tools")
   for (const cat of DISPLAY_CATEGORIES) {
     if (lower.includes(cat.toLowerCase())) return { category: cat };
   }
-  // Common aliases
+  // Common aliases → display categories
   if (/\bmcp\b/i.test(lower)) return { category: 'Agent & MCP' };
+  if (/\bagent\b/i.test(lower)) return { category: 'Agent & MCP' };
+  if (/\brag\b|\bembedding/i.test(lower)) return { category: 'Agent & MCP' };
   if (/\bai\b/i.test(lower)) return { category: 'AI Tools' };
-  if (/\bdev|coding|code\b/i.test(lower)) return { category: 'Development' };
+  if (/\bdev\b|coding|code\b/i.test(lower)) return { category: 'Development' };
   if (/\bcrypto|web3|defi\b/i.test(lower)) return { category: 'Crypto' };
+  if (/\bdesign|figma|ui\b/i.test(lower)) return { category: 'Design' };
+  if (/\bmarketing|seo|growth\b/i.test(lower)) return { category: 'Marketing' };
+  if (/\bfinance|trading|invest/i.test(lower)) return { category: 'Finance' };
+  if (/\bwellness|health|meditat/i.test(lower)) return { category: 'Wellness' };
+  if (/\beducat|learn|course/i.test(lower)) return { category: 'Education' };
+  if (/\bproductiv|automat|workflow/i.test(lower)) return { category: 'Productivity' };
   // Fallback: extract freetext after common verbs
   const match = lower.match(/(?:find|search|show me|browse)\s+(?:skills?\s+)?(?:for\s+|about\s+|in\s+)?(.+)/i);
   if (match) return { search: match[1].trim() };
