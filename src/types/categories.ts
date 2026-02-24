@@ -80,6 +80,7 @@ export const CATEGORY_KEYWORDS: Record<CanonicalCategory, string[]> = {
   'Wellness': [
     'wellness', 'health', 'fitness', 'meditation', 'mindfulness',
     'mental health', 'yoga', 'sleep', 'nutrition', 'self-care',
+    'therapy', 'therapeutic', 'cbt', 'counseling', 'journaling',
   ],
   'Education': [
     'education', 'learning', 'course', 'teach', 'tutorial',
