@@ -318,7 +318,7 @@ export class BloomIdentitySkillV2 {
       try {
         console.log('📝 Step 4: Saving identity with Bloom...');
         const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
-        const response = await fetch(`${apiBase}/ai-agents/agent-save`, {
+        const response = await fetch(`${apiBase}/x402/agent-save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -328,12 +328,12 @@ export class BloomIdentitySkillV2 {
           }),
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          agentUserId = data.agentUserId;
+        const body = await response.json();
+        if (response.ok && body.data?.agentUserId) {
+          agentUserId = body.data.agentUserId;
           console.log(`✅ Identity saved! User ID: ${agentUserId}`);
         } else {
-          console.error(`❌ API save failed: ${response.status}`);
+          console.error(`❌ API save failed: ${response.status}`, body.error || '');
         }
       } catch (saveError) {
         console.error('❌ Identity save failed:', saveError instanceof Error ? saveError.message : saveError);
@@ -476,23 +476,25 @@ export const bloomIdentitySkillV2 = {
  */
 function formatSuccessMessage(result: any): string {
   const { identityData, recommendations } = result;
+  const emoji = getPersonalityEmoji(identityData.personalityType);
 
-  let msg = `${getPersonalityEmoji(identityData.personalityType)} **${identityData.personalityType}**
-"${identityData.customTagline}"`;
+  // Link always first — the most important thing to surface
+  let msg = '';
+  if (result.dashboardUrl) {
+    const suffix = recommendations?.length > 0 ? ' & recommendations' : '';
+    msg += `🌸 **Your Bloom Identity Card is ready!**`;
+    msg += `\n🔗 ${result.dashboardUrl}`;
+    msg += `\n`;
+  }
+
+  msg += `\n${emoji} **${identityData.personalityType}** — "${identityData.customTagline}"`;
+  msg += `\n\n${identityData.customDescription}`;
 
   if (identityData.hiddenInsight) {
-    msg += `\n🔍 *${identityData.hiddenInsight.brief}*`;
+    msg += `\n\n🔍 *${identityData.hiddenInsight.brief}*`;
   }
 
-  msg += `\n**Categories**: ${identityData.mainCategories.join(' • ')}`;
-
-  if (recommendations?.length > 0 && result.dashboardUrl) {
-    msg += `\n\n✨ **Your Identity Card is ready**`;
-    msg += `\n→ See your card & recommendations: ${result.dashboardUrl}`;
-  } else if (result.dashboardUrl) {
-    msg += `\n\n✨ **Your Identity Card is ready**`;
-    msg += `\n→ See your card: ${result.dashboardUrl}`;
-  }
+  msg += `\n\n🏷️ ${identityData.mainCategories.join(' • ')}`;
 
   return msg;
 }
