@@ -470,7 +470,7 @@ function groupByCategory(
   mainCategories: string[],
 ): SkillRecommendation[] {
   const MIN_PER_CATEGORY = 3;
-  const MAX_PER_CATEGORY = 7;
+  const MAX_PER_CATEGORY = 5;
   const SCORE_THRESHOLD = 25;
 
   const buckets = new Map<string, SkillRecommendation[]>();

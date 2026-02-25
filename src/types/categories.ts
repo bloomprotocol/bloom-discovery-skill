@@ -32,6 +32,7 @@ export const CANONICAL_CATEGORIES = [
   'Development',
   'Marketing',
   'Finance',
+  'Prediction Market',
 ] as const;
 
 export type CanonicalCategory = (typeof CANONICAL_CATEGORIES)[number];
@@ -120,6 +121,10 @@ export const CATEGORY_KEYWORDS: Record<CanonicalCategory, string[]> = {
     'finance', 'investing', 'trading', 'portfolio', 'wealth', 'stock market',
     'budget', 'revenue', 'financial', 'dividend', 'screener', 'spending', 'balance',
   ],
+  'Prediction Market': [
+    'prediction market', 'polymarket', 'metaculus', 'manifold', 'forecast',
+    'futarchy', 'information market', 'event contract', 'binary option', 'kalshi',
+  ],
 };
 
 // ─── Display categories (frontend-aligned) ──────────────────────────────
@@ -130,15 +135,15 @@ export const CATEGORY_KEYWORDS: Record<CanonicalCategory, string[]> = {
  *   - Backend:  skills-public.controller.ts DISPLAY_CATEGORY_MAP
  *   - Frontend: skill-category-definitions.ts SKILL_CATEGORY_DEFINITIONS
  */
-export const DISPLAY_CATEGORY_MAP: Record<string, CanonicalCategory[]> = {
+export const DISPLAY_CATEGORY_MAP: Record<string, (CanonicalCategory | 'General')[]> = {
   'Agent & MCP': ['Agent Framework', 'Context Engineering', 'MCP Ecosystem'],
-  'AI Tools': ['AI Tools'],
-  'Development': ['Development', 'Coding Assistant'],
+  'AI & Dev Tools': ['AI Tools', 'Development', 'Coding Assistant'],
   'Productivity': ['Productivity'],
   'Design': ['Design'],
   'Marketing': ['Marketing'],
   'Crypto & Web3': ['Crypto'],
   'Finance': ['Finance'],
+  'Prediction Market': ['Prediction Market'],
   'Wellness': ['Wellness'],
   'Education': ['Education', 'Lifestyle'],
   'Other': ['General'],
@@ -178,6 +183,7 @@ export const CATEGORY_GITHUB_TOPICS: Record<CanonicalCategory, string[]> = {
   'Development': ['developer-tools', 'devtools', 'cli', 'sdk', 'library', 'framework'],
   'Marketing': ['marketing', 'seo', 'analytics', 'growth', 'content'],
   'Finance': ['finance', 'fintech', 'trading', 'investing', 'budgeting'],
+  'Prediction Market': ['prediction-market', 'forecasting', 'polymarket', 'metaculus', 'manifold', 'kalshi'],
 };
 
 /**
