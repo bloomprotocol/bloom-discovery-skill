@@ -1,23 +1,19 @@
 /**
  * Recommendation Pipeline (Standalone)
  *
- * Extracted from BloomIdentitySkillV2 so the backend can refresh
- * recommendations independently via Bull queue jobs.
+ * Fetches skills from the Bloom backend catalog (GET /skills?sort=score&limit=200),
+ * then applies personality-based scoring, deduplication, feedback filtering,
+ * and category grouping.
  *
- * Sources: ClawHub registry (verified via GitHub cross-check) + Claude Code awesome-lists.
- * Deduplicates by URL, groups by user categories, applies personality scoring.
+ * Stateless — safe to call from both the identity skill and backend Bull workers.
  */
 
-import { ClaudeCodeClient, createClaudeCodeClient } from './integrations/claude-code-client';
-import { ClawHubClient, createClawHubClient } from './integrations/clawhub-client';
 import { PersonalityType } from './types/personality';
 import {
   CANONICAL_CATEGORIES,
   CATEGORY_KEYWORDS,
   DEFAULT_FALLBACK_CATEGORIES,
-  containsBlockedKeyword,
 } from './types/categories';
-import { fetchWithTimeout, diskCacheGet, diskCacheSet } from './utils/disk-cache';
 
 export interface RefreshIdentityInput {
   mainCategories: string[];
@@ -50,32 +46,50 @@ export interface SkillRecommendation {
   reason?: string;
   creator?: string;
   creatorUserId?: number | string;
-  source?: 'ClaudeCode' | 'ClawHub';
+  source?: 'catalog';
   stars?: number;
   downloads?: number;
   language?: string;
   categoryGroup?: string;
 }
 
-// ─── Quality & language helpers ─────────────────────────────────────────
+// ─── Catalog skill shape (from GET /skills) ─────────────────────────────
 
-/**
- * Reject text that is likely non-English (e.g. Chinese descriptions from GitHub/ClawHub).
- * Heuristic: if more than 30% of characters are non-ASCII, consider it non-English.
- */
-function isLikelyEnglish(text: string): boolean {
-  if (!text || text.length === 0) return true;
-  let nonAscii = 0;
-  for (let i = 0; i < text.length; i++) {
-    if (text.charCodeAt(i) > 127) nonAscii++;
-  }
-  return nonAscii / text.length <= 0.3;
+interface CatalogSkill {
+  slug: string;
+  name: string;
+  description: string;
+  url: string;
+  categories: string[];
+  stars: number;
+  downloads: number;
+  autoScore: number;
+  creator?: string;
+  language?: string;
 }
+
+// ─── Internal scored skill ──────────────────────────────────────────────
+
+interface ScoredSkill {
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  categories: string[];
+  stars: number;
+  downloads: number;
+  rawScore: number;
+  personalityBoost: number;
+  finalScore: number;
+  creator?: string;
+  language?: string;
+}
+
+// ─── Category helpers ───────────────────────────────────────────────────
 
 /**
  * Normalize free-form category strings to canonical categories.
- * "DeFi" → Crypto, "Web3" → Crypto, "Blockchain" → Crypto, etc.
- * Deduplicates the result. Falls back to DEFAULT_FALLBACK_CATEGORIES if nothing matches.
+ * Falls back to DEFAULT_FALLBACK_CATEGORIES if nothing matches.
  */
 function normalizeToCanonical(categories: string[]): string[] {
   const matched = new Set<string>();
@@ -83,18 +97,16 @@ function normalizeToCanonical(categories: string[]): string[] {
   for (const cat of categories) {
     const lower = cat.toLowerCase().trim();
 
-    // Direct match against canonical list (case-insensitive)
     const direct = CANONICAL_CATEGORIES.find(c => c.toLowerCase() === lower);
     if (direct) {
       matched.add(direct);
       continue;
     }
 
-    // Keyword match — scan each canonical category's keyword list
     for (const [canonical, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
       if (keywords.some(kw => lower.includes(kw) || kw.includes(lower))) {
         matched.add(canonical);
-        break; // one match per input category is enough
+        break;
       }
     }
   }
@@ -106,66 +118,6 @@ function normalizeToCanonical(categories: string[]): string[] {
   return Array.from(matched);
 }
 
-// ─── GitHub cross-check (verify skill exists in openclaw/skills monorepo) ───
-
-const GITHUB_SKILLS_REPO = 'openclaw/skills';
-const GITHUB_VERIFY_CACHE_NS = 'github-verify';
-const GITHUB_VERIFY_TTL = 1000 * 60 * 60 * 24; // 24 hours
-
-/**
- * Verify a ClawHub skill exists in the openclaw/skills GitHub monorepo.
- * Results are disk-cached for 24 hours to avoid burning the 60 req/hr rate limit.
- */
-async function verifySkillOnGitHub(owner: string, slug: string): Promise<boolean> {
-  const cacheKey = `${owner.toLowerCase()}/${slug}`;
-
-  // Check disk cache first
-  const cached = await diskCacheGet<boolean>(GITHUB_VERIFY_CACHE_NS, cacheKey);
-  if (cached !== undefined) return cached;
-
-  try {
-    const path = `skills/${owner.toLowerCase()}/${slug}/SKILL.md`;
-    const url = `https://api.github.com/repos/${GITHUB_SKILLS_REPO}/contents/${path}`;
-    const response = await fetchWithTimeout(url, {
-      timeoutMs: 3_000,
-      method: 'HEAD',
-      headers: {
-        'User-Agent': 'Bloom-Identity-Skill',
-        'Accept': 'application/vnd.github.v3+json',
-      },
-    });
-    const result = response.status === 200;
-    // Fire-and-forget — cache write failure is non-fatal
-    diskCacheSet(GITHUB_VERIFY_CACHE_NS, cacheKey, result, GITHUB_VERIFY_TTL).catch(() => {});
-    return result;
-  } catch {
-    // Network/timeout error — treat as unverified, don't cache failures
-    return false;
-  }
-}
-
-// ─── Concurrency limiter ─────────────────────────────────────────────────
-
-function createSemaphore(concurrency: number) {
-  let running = 0;
-  const queue: (() => void)[] = [];
-
-  return async function <T>(fn: () => Promise<T>): Promise<T> {
-    if (running >= concurrency) {
-      await new Promise<void>(resolve => queue.push(resolve));
-    }
-    running++;
-    try {
-      return await fn();
-    } finally {
-      running--;
-      queue.shift()?.();
-    }
-  };
-}
-
-const limitGitHub = createSemaphore(5);
-
 // ─── Pipeline timeout ────────────────────────────────────────────────────
 
 const PIPELINE_TIMEOUT_MS = 25_000;
@@ -174,7 +126,6 @@ const PIPELINE_TIMEOUT_MS = 25_000;
 
 /**
  * Run the full recommendation pipeline: fetch, score, deduplicate, group.
- * Stateless — creates fresh client instances each call.
  */
 export async function refreshRecommendations(
   identity: RefreshIdentityInput,
@@ -201,10 +152,7 @@ export async function refreshRecommendations(
 async function refreshRecommendationsInner(
   identity: RefreshIdentityInput,
 ): Promise<SkillRecommendation[]> {
-  const claudeCodeClient = createClaudeCodeClient();
-  const clawHubClient = createClawHubClient();
-
-  // Normalize categories before anything else (Fix 2)
+  // Normalize categories before anything else
   const normalizedCategories = normalizeToCanonical(identity.mainCategories);
   const normalizedIdentity: RefreshIdentityInput = {
     ...identity,
@@ -217,19 +165,80 @@ async function refreshRecommendationsInner(
   );
 
   try {
-    // Search both sources in parallel
-    const [claudeCodeSkills, clawHubSkills] = await Promise.all([
-      getClaudeCodeRecommendations(claudeCodeClient, normalizedIdentity),
-      getClawHubRecommendations(clawHubClient, normalizedIdentity).catch(err => {
-        console.error('[recommendation-pipeline] ClawHub search failed:', err);
-        return [] as SkillRecommendation[];
-      }),
-    ]);
+    // Fetch skills from backend catalog
+    const catalogSkills = await fetchCatalogSkills();
 
-    // Merge and deduplicate by URL — keep highest-scoring entry
-    const all = [...claudeCodeSkills, ...clawHubSkills];
+    if (catalogSkills.length === 0) {
+      console.warn('[recommendation-pipeline] No skills returned from catalog');
+      return [];
+    }
+
+    // Map to internal ScoredSkill and compute personality boost
+    const scored: ScoredSkill[] = catalogSkills.map(s => {
+      const { boost } = calculatePersonalityBoost(
+        { description: s.description, categories: s.categories, stars: s.stars },
+        normalizedIdentity,
+      );
+      const rawScore = s.autoScore || 0;
+      return {
+        id: s.slug,
+        name: s.name,
+        description: s.description,
+        url: s.url,
+        categories: s.categories,
+        stars: s.stars,
+        downloads: s.downloads,
+        rawScore,
+        personalityBoost: boost,
+        finalScore: Math.min(rawScore + boost, 100),
+        creator: s.creator,
+        language: s.language,
+      };
+    });
+
+    // Convert to SkillRecommendation format
+    const typeName = normalizedIdentity.personalityType.replace(/^The /, '');
+    let recommendations: SkillRecommendation[] = scored.map(s => {
+      const searchText = `${s.name} ${s.description} ${s.categories.join(' ')}`.toLowerCase();
+      const matchedCategory = [...normalizedIdentity.mainCategories, ...normalizedIdentity.subCategories]
+        .find(c => searchText.includes(c.toLowerCase()));
+
+      const { matchedKeywords } = calculatePersonalityBoost(
+        { description: s.description, categories: s.categories, stars: s.stars },
+        normalizedIdentity,
+      );
+
+      const downloadsDisplay = s.downloads >= 1000
+        ? `${(s.downloads / 1000).toFixed(1)}k`
+        : `${s.downloads}`;
+
+      const reason = matchedCategory && matchedKeywords.length > 0
+        ? `Because you're into ${matchedCategory} — ${downloadsDisplay} downloads`
+        : matchedCategory
+          ? `Because you're into ${matchedCategory} — ${downloadsDisplay} downloads`
+          : matchedKeywords.length > 0
+            ? `Fits your ${typeName} style — ${downloadsDisplay} downloads`
+            : `Fits your ${typeName} profile — ${downloadsDisplay} downloads`;
+
+      return {
+        skillId: s.id,
+        skillName: s.name,
+        description: s.description,
+        url: s.url,
+        categories: s.categories,
+        matchScore: s.finalScore,
+        reason,
+        creator: s.creator,
+        source: 'catalog' as const,
+        stars: s.stars,
+        downloads: s.downloads,
+        language: s.language,
+      };
+    });
+
+    // Deduplicate by URL — keep highest-scoring entry
     const byUrl = new Map<string, SkillRecommendation>();
-    for (const rec of all) {
+    for (const rec of recommendations) {
       const key = rec.url.toLowerCase().replace(/\/+$/, '');
       const existing = byUrl.get(key);
       if (!existing || rec.matchScore > existing.matchScore) {
@@ -256,17 +265,17 @@ async function refreshRecommendationsInner(
           const w = weights[cat];
           if (w !== undefined && w !== 1.0) {
             skill.matchScore = Math.min(Math.round(skill.matchScore * w), 100);
-            break; // Apply best matching category weight once
+            break;
           }
         }
       }
     }
 
-    // Group by normalized categories (3-7 per category)
+    // Group by normalized categories (3-5 per category)
     const grouped = groupByCategory(deduplicated, normalizedCategories);
 
     console.log(
-      `[recommendation-pipeline] ${claudeCodeSkills.length} Claude Code + ${clawHubSkills.length} ClawHub => ${grouped.length} grouped`,
+      `[recommendation-pipeline] ${catalogSkills.length} catalog skills => ${grouped.length} grouped`,
     );
 
     return grouped;
@@ -276,205 +285,34 @@ async function refreshRecommendationsInner(
   }
 }
 
-// ─── ClawHub recommendations (Fix 1: replaces GitHub) ───────────────────
+// ─── Catalog fetch ──────────────────────────────────────────────────────
 
-async function getClawHubRecommendations(
-  client: ClawHubClient,
-  identity: RefreshIdentityInput,
-): Promise<SkillRecommendation[]> {
+async function fetchCatalogSkills(): Promise<CatalogSkill[]> {
+  const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
+  const url = `${apiBase}/skills?sort=score&limit=200`;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+
   try {
-    // 1. Search ClawHub for skills matching user categories
-    const rawSkills = await client.getRecommendations({
-      mainCategories: identity.mainCategories,
-      subCategories: identity.subCategories,
-      limit: 20,
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Bloom-Identity-Skill' },
     });
 
-    if (rawSkills.length === 0) return [];
+    if (!res.ok) {
+      console.error(`[recommendation-pipeline] Catalog fetch failed: ${res.status}`);
+      return [];
+    }
 
-    // 2. For each result, fetch details first (search results don't include owner)
-    //    then GitHub cross-check with the owner from details
-    //    Concurrency-limited to protect GitHub's 60 req/hr rate limit
-    const verifiedSkills = await Promise.all(
-      rawSkills.map(async (skill): Promise<SkillRecommendation | null> => {
-        // Step A: Fetch full details (includes owner, stats, moderation)
-        const details = await client.getSkillDetails(skill.slug).catch(() => null);
-        if (!details) return null;
-
-        // Step B: GitHub cross-check using owner from details (rate-limited)
-        const owner = details.creator;
-        if (!owner) {
-          console.log(`[clawhub] Skipped ${skill.slug}: no owner`);
-          return null;
-        }
-
-        const isVerified = await limitGitHub(() => verifySkillOnGitHub(owner, skill.slug));
-        if (!isVerified) {
-          console.log(`[clawhub] Skipped ${skill.slug}: GitHub cross-check failed (owner: ${owner})`);
-          return null;
-        }
-
-        // Quality gates
-
-        // Traction — read early, used in moderation gate below
-        const downloads = details.stats?.downloads ?? 0;
-
-        // Moderation flags: always block malware; suspicious is OK if high traction
-        if (details.moderation?.isMalwareBlocked === true) {
-          console.log(`[clawhub] Skipped ${skill.slug}: malware blocked`);
-          return null;
-        }
-        if (details.moderation?.isSuspicious === true && downloads <= 200) {
-          console.log(`[clawhub] Skipped ${skill.slug}: suspicious + low downloads (${downloads})`);
-          return null;
-        }
-
-        const description = details.description || '';
-
-        // Description quality
-        if (description.length < 20) return null;
-
-        // English-only filter (Fix 3)
-        if (!isLikelyEnglish(description)) {
-          console.log(`[clawhub] Skipped ${skill.slug}: non-English description`);
-          return null;
-        }
-
-        // Blocked keywords
-        if (containsBlockedKeyword(`${details.name} ${description}`)) {
-          console.log(`[clawhub] Skipped ${skill.slug}: blocked keyword`);
-          return null;
-        }
-
-        // Traction gate: minimum 20 downloads
-        if (downloads < 20) return null;
-
-        // Relevance gate: similarity score minimum
-        if (skill.similarityScore < 0.5) return null;
-
-        // Map to SkillRecommendation
-        const normalizedScore = Math.min(Math.round((skill.similarityScore / 4) * 100), 100);
-
-        const searchText = `${details.name} ${description} ${(details.categories || []).join(' ')}`.toLowerCase();
-        const matchedCategory = [...identity.mainCategories, ...identity.subCategories]
-          .find(c => searchText.includes(c.toLowerCase()));
-
-        const { boost, matchedKeywords } = calculatePersonalityBoost(
-          { description, categories: details.categories || [] },
-          identity,
-        );
-
-        const downloadsDisplay = downloads >= 1000
-          ? `${(downloads / 1000).toFixed(1)}k`
-          : `${downloads}`;
-
-        const typeName = identity.personalityType.replace(/^The /, '');
-        const reason = matchedCategory && matchedKeywords.length > 0
-          ? `Because you're into ${matchedCategory} — ${downloadsDisplay} downloads`
-          : matchedCategory
-            ? `Because you're into ${matchedCategory} — ${downloadsDisplay} downloads`
-            : matchedKeywords.length > 0
-              ? `Fits your ${typeName} style — ${downloadsDisplay} downloads`
-              : `Fits your ${typeName} profile — ${downloadsDisplay} downloads`;
-
-        return {
-          skillId: skill.slug,
-          skillName: details.name || skill.name,
-          description,
-          url: `https://clawhub.ai/skills/${skill.slug}`,
-          categories: details.categories || ['General'],
-          matchScore: Math.min(normalizedScore + boost, 100),
-          reason,
-          creator: owner,
-          creatorUserId: details.creatorUserId,
-          source: 'ClawHub' as const,
-          downloads,
-        };
-      }),
-    );
-
-    return verifiedSkills.filter((s): s is SkillRecommendation => s !== null);
-  } catch (error) {
-    console.error('[recommendation-pipeline] ClawHub recommendations failed:', error);
+    const body = await res.json();
+    const skills: CatalogSkill[] = body.data?.skills || [];
+    return skills;
+  } catch (err) {
+    console.error('[recommendation-pipeline] Catalog fetch error:', err);
     return [];
-  }
-}
-
-// ─── Claude Code recommendations ────────────────────────────────────────
-
-async function getClaudeCodeRecommendations(
-  client: ClaudeCodeClient,
-  identity: RefreshIdentityInput,
-): Promise<SkillRecommendation[]> {
-  try {
-    const claudeCodeSkills = await client.getRecommendations({
-      mainCategories: identity.mainCategories,
-      subCategories: identity.subCategories,
-      limit: 20,
-    });
-
-    return claudeCodeSkills
-      .filter(skill => {
-        // English-only filter (Fix 3)
-        if (!isLikelyEnglish(skill.description)) {
-          console.log(`[claude-code] Skipped ${skill.skillName}: non-English description`);
-          return false;
-        }
-        // URL must be absolute
-        if (!skill.url || !skill.url.startsWith('http')) {
-          return false;
-        }
-        return true;
-      })
-      .map(skill => {
-        const CLAUDE_CODE_SCORE_CEILING = 30;
-        const rawScore = skill.matchScore || 0;
-        const normalizedScore = Math.min(Math.round((rawScore / CLAUDE_CODE_SCORE_CEILING) * 100), 100);
-
-        // Normalize raw README header category to canonical categories
-        const normalizedCats = normalizeToCanonical(
-          skill.category ? [skill.category] : [],
-        );
-
-        const searchText = `${skill.skillName} ${skill.description} ${normalizedCats.join(' ')}`.toLowerCase();
-        const matchedCategory = [...identity.mainCategories, ...identity.subCategories]
-          .find(c => searchText.includes(c.toLowerCase()));
-
-        const { boost, matchedKeywords } = calculatePersonalityBoost(
-          { description: skill.description, categories: normalizedCats },
-          identity,
-        );
-
-        const typeName = identity.personalityType.replace(/^The /, '');
-        const reason = matchedCategory && matchedKeywords.length > 0
-          ? `Because you're into ${matchedCategory} — fits your ${typeName} style`
-          : matchedCategory
-            ? `Because you're into ${matchedCategory}`
-            : matchedKeywords.length > 0
-              ? `Fits your ${typeName} style`
-              : `Fits your ${typeName} profile`;
-
-        // Generate a stable slug-style skillId from name
-        const skillId = skill.skillName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '');
-
-        return {
-          skillId,
-          skillName: skill.skillName,
-          matchScore: Math.min(normalizedScore + boost, 100),
-          reason,
-          description: skill.description,
-          url: skill.url,
-          categories: normalizedCats,
-          creator: skill.creator,
-          source: 'ClaudeCode' as const,
-        };
-      });
-  } catch (error) {
-    console.error('[recommendation-pipeline] Claude Code search failed:', error);
-    return [];
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -617,49 +455,41 @@ function calculatePersonalityBoost(
   let tasteBoost = 0;
   const taste = identity.tasteSpectrums;
   if (taste) {
-    // Learning: try-first (< 40) → tools, templates, CLIs, starter kits
     if (taste.learning < 40) {
       if (/\b(tool|template|cli|starter|kit|scaffold|boilerplate)\b/i.test(searchText)) {
         tasteBoost += 6;
       }
     }
-    // Learning: study-first (> 60) → tutorials, guides, courses, documentation
     if (taste.learning > 60) {
       if (/\b(tutorial|guide|course|documentation|docs|learn|education)\b/i.test(searchText)) {
         tasteBoost += 6;
       }
     }
-    // Decision: gut (< 40) → tools, templates, quick-start
     if (taste.decision < 40) {
       if (/\b(tool|template|quick[- ]?start|scaffold|instant|rapid)\b/i.test(searchText)) {
         tasteBoost += 5;
       }
     }
-    // Decision: deliberate (> 60) → docs, guides, comparisons
     if (taste.decision > 60) {
       if (/\b(documentation|docs|guide|comparison|benchmark|evaluat|review)\b/i.test(searchText)) {
         tasteBoost += 5;
       }
     }
-    // Novelty: early-adopter (< 40) → beta, new, cutting-edge
     if (taste.novelty < 40) {
       if (/\b(beta|new|cutting[- ]?edge|alpha|experimental|preview|early[- ]?access)\b/i.test(searchText)) {
         tasteBoost += 5;
       }
     }
-    // Novelty: wait-and-see (> 60) → established, proven, mature
     if (taste.novelty > 60) {
       if (/\b(established|proven|mature|stable|reliable|battle[- ]?tested|mainstream)\b/i.test(searchText)) {
         tasteBoost += 5;
       }
     }
-    // Risk: bold (< 40) → high-risk, moonshot, experimental
     if (taste.risk < 40) {
       if (/\b(moonshot|experimental|high[- ]?risk|ambitious|disrupt|breakthrough|radical)\b/i.test(searchText)) {
         tasteBoost += 4;
       }
     }
-    // Risk: cautious (> 60) → stable, established, safe
     if (taste.risk > 60) {
       if (/\b(stable|established|safe|reliable|secure|conservative|trusted)\b/i.test(searchText)) {
         tasteBoost += 4;

@@ -132,7 +132,7 @@ async function run() {
   check('Multiple category groups', Object.keys(groups).length >= 2);
   check('All URLs absolute', recs.every(r => r.url?.startsWith('https://')));
   check('All have reason', recs.every(r => !!r.reason));
-  check('All have source', recs.every(r => ['ClaudeCode', 'ClawHub'].includes(r.source!)));
+  check('All have source', recs.every(r => r.source === 'catalog'));
   check('Per-category <= 5', Object.values(groups).every(g => g.length <= 5));
 
   console.log(`\n${'═'.repeat(58)}`);
