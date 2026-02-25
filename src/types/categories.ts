@@ -136,6 +136,7 @@ export const DISPLAY_CATEGORY_MAP: Record<string, CanonicalCategory[]> = {
   'Crypto & Finance': ['Crypto', 'Finance'],
   'Wellness': ['Wellness'],
   'Education': ['Education', 'Lifestyle'],
+  'Other': ['General'],
 };
 
 export const DISPLAY_CATEGORIES = Object.keys(DISPLAY_CATEGORY_MAP);
