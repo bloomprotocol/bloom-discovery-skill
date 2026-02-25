@@ -92,6 +92,7 @@ export class BloomIdentitySkillV2 {
     recommendations?: SkillRecommendation[];
     discoveries?: DiscoveryEntry[];
     dashboardUrl?: string;
+    discoverUrl?: string;
     dataQuality?: number;
     dimensions?: {
       conviction: number;
@@ -365,6 +366,35 @@ export class BloomIdentitySkillV2 {
         console.log(`✅ Dashboard: ${dashboardUrl}`);
       }
 
+      // Step 5: Create curated list for recommendation discovery URL
+      let discoverUrl: string | undefined;
+      if (agentUserId && recommendations.length > 0) {
+        try {
+          const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
+          const listRes = await fetch(`${apiBase}/skills/curated-list`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              agentUserId,
+              personalityType: identityData!.personalityType,
+              context: `Matched to your ${identityData!.personalityType.replace(/^The /i, '')} profile`,
+              items: recommendations.map((r: any) => ({
+                slug: r.skillId,
+                matchScore: r.matchScore,
+              })),
+            }),
+          });
+          const listBody = await listRes.json();
+          if (listRes.ok && listBody.data?.url) {
+            discoverUrl = listBody.data.url;
+            console.log(`✅ Curated list: ${discoverUrl}`);
+          }
+        } catch (e) {
+          // Non-critical — skip silently
+          console.debug('[curated-list] failed:', e instanceof Error ? e.message : e);
+        }
+      }
+
       console.log('🎉 Bloom Identity generation complete!');
 
       // Prepare share data for frontend buttons
@@ -381,6 +411,7 @@ export class BloomIdentitySkillV2 {
         recommendations,
         discoveries,
         dashboardUrl,
+        discoverUrl,
         dataQuality,
         dimensions,
         actions: {
@@ -628,7 +659,6 @@ function formatSuccessMessage(result: any): string {
   // Link always first — the most important thing to surface
   let msg = '';
   if (result.dashboardUrl) {
-    const suffix = recommendations?.length > 0 ? ' & recommendations' : '';
     msg += `🌸 **Your Bloom Identity Card is ready!**`;
     msg += `\n🔗 ${result.dashboardUrl}`;
     msg += `\n`;
@@ -642,6 +672,12 @@ function formatSuccessMessage(result: any): string {
   }
 
   msg += `\n\n🏷️ ${identityData.mainCategories.join(' • ')}`;
+
+  // Curated discover link — soft discovery tone, no commercial language
+  if (result.discoverUrl && recommendations?.length > 0) {
+    msg += `\n\n🔍 I found ${recommendations.length} skills that match your profile:`;
+    msg += `\n🔗 ${result.discoverUrl}`;
+  }
 
   return msg;
 }
