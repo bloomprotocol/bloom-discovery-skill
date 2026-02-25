@@ -534,7 +534,8 @@ export class PersonalityAnalyzer {
   private calculateTasteSpectrums(userData: UserData): { final: TasteSpectrums; keywordOnly: TasteSpectrums; episodeLabelCounts: Record<string, number> } {
     const allText = this.extractAllText(userData).toLowerCase();
 
-    // Layer 1: Keyword scoring (±5 per net hit)
+    // Layer 1: Keyword scoring (±7 per net hit — enough signal to escape the 40-60 band)
+    const KW_WEIGHT = 7;
     const tryHits = LEARNING_TRY_FIRST_KEYWORDS.filter(k => allText.includes(k)).length;
     const studyHits = LEARNING_STUDY_FIRST_KEYWORDS.filter(k => allText.includes(k)).length;
     const gutHits = DECISION_GUT_KEYWORDS.filter(k => allText.includes(k)).length;
@@ -544,10 +545,10 @@ export class PersonalityAnalyzer {
     const boldHits = RISK_BOLD_KEYWORDS.filter(k => allText.includes(k)).length;
     const cautiousHits = RISK_CAUTIOUS_KEYWORDS.filter(k => allText.includes(k)).length;
 
-    let learning = 50 + (studyHits - tryHits) * 5;
-    let decision = 50 + (deliberateHits - gutHits) * 5;
-    let novelty = 50 + (waitHits - earlyHits) * 5;
-    let risk = 50 + (cautiousHits - boldHits) * 5;
+    let learning = 50 + (studyHits - tryHits) * KW_WEIGHT;
+    let decision = 50 + (deliberateHits - gutHits) * KW_WEIGHT;
+    let novelty = 50 + (waitHits - earlyHits) * KW_WEIGHT;
+    let risk = 50 + (cautiousHits - boldHits) * KW_WEIGHT;
 
     const clamp = (v: number) => Math.min(Math.max(Math.round(v), 0), 100);
 

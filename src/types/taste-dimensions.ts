@@ -43,45 +43,64 @@ export interface AiPlaybook {
 // ─── Keyword sets for spectrum detection ─────────────────────────────────
 
 export const LEARNING_TRY_FIRST_KEYWORDS = [
-  'try', 'build', 'ship', 'prototype', 'hack', 'just do it',
+  'try', 'build', 'built', 'ship', 'prototype', 'hack', 'just do it',
   'hands-on', 'learn by doing', 'trial', 'tinker', 'iterate',
   'mvp', 'quick start', 'jump in', 'figure it out',
+  'set up', 'set a', 'playing with', 'experimenting', 'experiment',
+  'working on', 'custom', 'scaffold', 'boilerplate', 'starter',
+  'plug and play', 'deploy', 'spin up', 'wired up',
 ];
 
 export const LEARNING_STUDY_FIRST_KEYWORDS = [
   'research', 'study', 'understand', 'read', 'analyze',
   'theory', 'documentation', 'whitepaper', 'deep dive', 'literature',
-  'systematic', 'methodology', 'framework', 'fundamentals', 'principles',
+  'systematic', 'methodology', 'fundamentals', 'principles',
+  'architecture', 'patterns', 'best practice', 'trade-off', 'tradeoff',
+  'how it works', 'internals', 'under the hood', 'mental model',
+  'comparison', 'benchmark', 'evaluate',
 ];
 
 export const DECISION_GUT_KEYWORDS = [
   'gut', 'instinct', 'feel', 'vibe', 'hunch',
   'intuition', 'snap decision', 'trust my gut', 'just knew', 'sense',
+  'went with', 'picked', 'grabbed', 'chose quickly', 'no-brainer',
+  'obvious choice', 'just use', 'just went',
 ];
 
 export const DECISION_DELIBERATE_KEYWORDS = [
   'analyze', 'compare', 'pros and cons', 'evaluate', 'weigh',
   'spreadsheet', 'criteria', 'due diligence', 'data-driven', 'benchmark',
+  'strategy', 'planning', 'structured', 'information aggregat',
+  'looked into', 'considered', 'assessed', 'measured',
 ];
 
 export const NOVELTY_EARLY_KEYWORDS = [
   'first', 'early', 'beta', 'alpha', 'bleeding edge',
   'day one', 'before anyone', 'pre-launch', 'pioneer', 'cutting edge',
+  'cutting-edge', 'emerging', 'exploring', 'frontier', 'future',
+  'autonomous', 'agentic', 'degen', 'experimental', 'novel',
+  'next-gen', 'new approach', 'latest',
 ];
 
 export const NOVELTY_WAIT_KEYWORDS = [
   'wait', 'proven', 'stable', 'mature', 'established',
   'track record', 'safe', 'battle-tested', 'mainstream', 'after others',
+  'well-known', 'widely adopted', 'production-ready', 'industry standard',
+  'tried and true', 'reliable', 'long-running',
 ];
 
 export const RISK_BOLD_KEYWORDS = [
   'yolo', 'all in', 'bet big', 'bold', 'aggressive',
   'risk', 'moon', 'gamble', 'fearless', 'ambitious',
+  'degen', 'ape', 'leverage', 'high-risk', 'moonshot',
+  'disrupt', 'radical', 'unconventional', 'bet on',
 ];
 
 export const RISK_CAUTIOUS_KEYWORDS = [
   'careful', 'conservative', 'hedge', 'safe', 'diversify',
   'cautious', 'slow', 'measured', 'steady', 'prudent',
+  'low-risk', 'balanced portfolio', 'risk-adjusted', 'sustainable',
+  'gradual', 'incremental', 'step by step',
 ];
 
 // ─── Episodic memory patterns ────────────────────────────────────────────

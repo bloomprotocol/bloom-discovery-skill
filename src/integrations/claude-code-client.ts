@@ -198,12 +198,14 @@ export class ClaudeCodeClient {
       // Also matches: * [Skill Name](url) - Description
       const skillMatch = line.match(/^[\s-*]+\[([^\]]+)\]\(([^\)]+)\)\s*[-–—]\s*(.+)$/);
       if (skillMatch) {
-        const [, skillName, url, description] = skillMatch;
+        const [, skillName, rawUrl, description] = skillMatch;
+        const url = this.resolveUrl(rawUrl.trim(), repo);
+        if (!url) continue; // skip unresolvable relative URLs
 
         skills.push({
           skillName: skillName.trim(),
           description: description.trim(),
-          url: url.trim(),
+          url,
           category: currentCategory,
           creator: repo.owner === 'anthropics' ? 'Anthropic' : undefined,
           type: repo.type,
@@ -215,12 +217,14 @@ export class ClaudeCodeClient {
       // Alternative pattern: - [Skill Name](url): Description
       const altMatch = line.match(/^[\s-*]+\[([^\]]+)\]\(([^\)]+)\):\s*(.+)$/);
       if (altMatch) {
-        const [, skillName, url, description] = altMatch;
+        const [, skillName, rawUrl, description] = altMatch;
+        const url = this.resolveUrl(rawUrl.trim(), repo);
+        if (!url) continue;
 
         skills.push({
           skillName: skillName.trim(),
           description: description.trim(),
-          url: url.trim(),
+          url,
           category: currentCategory,
           creator: repo.owner === 'anthropics' ? 'Anthropic' : undefined,
           type: repo.type,
@@ -230,6 +234,18 @@ export class ClaudeCodeClient {
     }
 
     return skills;
+  }
+
+  /**
+   * Resolve a URL from a markdown link. Relative URLs are resolved against the repo.
+   * Returns null for anchors-only or unresolvable paths.
+   */
+  private resolveUrl(raw: string, repo: typeof SKILL_REPOS[0]): string | null {
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+    if (raw.startsWith('#')) return null; // anchor-only link
+    // Relative path → resolve to GitHub tree URL
+    const clean = raw.replace(/^\.\//, '');
+    return `https://github.com/${repo.owner}/${repo.repo}/tree/main/${clean}`;
   }
 
   /**

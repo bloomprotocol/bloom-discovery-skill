@@ -420,6 +420,10 @@ async function getClaudeCodeRecommendations(
           console.log(`[claude-code] Skipped ${skill.skillName}: non-English description`);
           return false;
         }
+        // URL must be absolute
+        if (!skill.url || !skill.url.startsWith('http')) {
+          return false;
+        }
         return true;
       })
       .map(skill => {
@@ -427,12 +431,17 @@ async function getClaudeCodeRecommendations(
         const rawScore = skill.matchScore || 0;
         const normalizedScore = Math.min(Math.round((rawScore / CLAUDE_CODE_SCORE_CEILING) * 100), 100);
 
-        const searchText = `${skill.skillName} ${skill.description} ${skill.category || ''}`.toLowerCase();
+        // Normalize raw README header category to canonical categories
+        const normalizedCats = normalizeToCanonical(
+          skill.category ? [skill.category] : [],
+        );
+
+        const searchText = `${skill.skillName} ${skill.description} ${normalizedCats.join(' ')}`.toLowerCase();
         const matchedCategory = [...identity.mainCategories, ...identity.subCategories]
           .find(c => searchText.includes(c.toLowerCase()));
 
         const { boost, matchedKeywords } = calculatePersonalityBoost(
-          { description: skill.description, categories: skill.category ? [skill.category] : [] },
+          { description: skill.description, categories: normalizedCats },
           identity,
         );
 
@@ -445,14 +454,20 @@ async function getClaudeCodeRecommendations(
               ? `Fits your ${typeName} style`
               : `Fits your ${typeName} profile`;
 
+        // Generate a stable slug-style skillId from name
+        const skillId = skill.skillName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '');
+
         return {
-          skillId: skill.url,
+          skillId,
           skillName: skill.skillName,
           matchScore: Math.min(normalizedScore + boost, 100),
           reason,
           description: skill.description,
           url: skill.url,
-          categories: skill.category ? [skill.category] : ['General'],
+          categories: normalizedCats,
           creator: skill.creator,
           source: 'ClaudeCode' as const,
         };
