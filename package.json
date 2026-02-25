@@ -18,8 +18,7 @@
     "test": "npm run build:pipeline && npx tsx test-e2e-real-identity.ts",
     "test:quick": "node test-e2e-pipeline.mjs",
     "test:conversation": "ts-node scripts/test-conversation-analysis.ts",
-    "test:cdp-wallet": "ts-node scripts/test-cdp-wallet.ts",
-    "generate-token": "ts-node generate-fresh-token.ts",
+"generate-token": "ts-node generate-fresh-token.ts",
     "x-agent": "tsx scripts/autonomous-x-agent.ts",
     "test:x-agent": "tsx scripts/test-x-agent.ts",
     "mint-sbt": "ts-node scripts/mint-sbt.ts",
@@ -35,7 +34,6 @@
   "author": "Bloom Protocol",
   "license": "MIT",
   "dependencies": {
-    "@coinbase/agentkit": "^0.10.4",
     "commander": "^11.1.0",
     "dotenv": "^17.2.4",
     "jsonwebtoken": "^9.0.2",

@@ -6,9 +6,7 @@
  *   npx ts-node scripts/deploy-sbt.ts
  *
  * Requires:
- *   - WALLET_ENCRYPTION_SECRET in .env (for agent wallet key decryption)
- *   - A user wallet in .wallet-storage/ (run the skill once first)
- *   - OR set DEPLOYER_PRIVATE_KEY directly in .env
+ *   - DEPLOYER_PRIVATE_KEY in .env
  *
  * After deploy, add the printed address to .env as SBT_CONTRACT_ADDRESS.
  */
@@ -70,29 +68,12 @@ function compile(): { abi: any[]; bytecode: `0x${string}` } {
 // ---------------------------------------------------------------------------
 // 2. Resolve deployer private key
 // ---------------------------------------------------------------------------
-async function getDeployerKey(): Promise<`0x${string}`> {
-  // Option A: explicit env var
-  if (process.env.DEPLOYER_PRIVATE_KEY) {
-    const key = process.env.DEPLOYER_PRIVATE_KEY;
-    return (key.startsWith('0x') ? key : `0x${key}`) as `0x${string}`;
+function getDeployerKey(): `0x${string}` {
+  const key = process.env.DEPLOYER_PRIVATE_KEY;
+  if (!key) {
+    throw new Error('Missing DEPLOYER_PRIVATE_KEY in .env');
   }
-
-  // Option B: first user wallet in storage (dev convenience)
-  const { walletStorage } = await import('../src/blockchain/wallet-storage');
-  const users = await walletStorage.listUsers();
-  if (users.length === 0) {
-    throw new Error(
-      'No deployer key found. Set DEPLOYER_PRIVATE_KEY or run the skill once to create a wallet.',
-    );
-  }
-
-  const wallet = await walletStorage.getUserWallet(users[0]);
-  if (!wallet?.privateKey) {
-    throw new Error('Stored wallet has no private key (mock wallet). Set DEPLOYER_PRIVATE_KEY instead.');
-  }
-
-  console.log(`Using wallet from user "${users[0]}" as deployer.`);
-  return wallet.privateKey;
+  return (key.startsWith('0x') ? key : `0x${key}`) as `0x${string}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,7 +86,7 @@ async function main() {
   console.log(`\nTarget network: ${chain.name} (${chain.id})`);
 
   const { abi, bytecode } = compile();
-  const privateKey = await getDeployerKey();
+  const privateKey = getDeployerKey();
   const account = privateKeyToAccount(privateKey);
 
   console.log(`Deployer: ${account.address}`);

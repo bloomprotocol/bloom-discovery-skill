@@ -322,51 +322,15 @@ export class EnhancedDataCollector {
    *
    * ⚠️ OPT-IN ONLY - Not used in default personality analysis
    *
-   * This is only called when:
-   * 1. User explicitly provides wallet address
-   * 2. User signs ownership proof
-   * 3. User opts-in to wallet-based recommendations
-   *
-   * Reasons:
-   * - Wallet ownership is hard to prove automatically
-   * - Privacy concerns
-   * - Conversation + Twitter already sufficient for persona
+   * Stub — wallet management removed. Agents bring their own wallet via Coinbase AgentKit.
+   * Returns empty data; wallet address is passed in externally if available.
    */
-  private async collectWalletData(userId: string): Promise<WalletData> {
-    // Get real wallet address from storage
-    const { WalletStorage } = await import('../blockchain/wallet-storage');
-    const walletStorage = new WalletStorage();
-
+  private async collectWalletData(_userId: string): Promise<WalletData> {
+    // Wallet management removed — agents bring their own wallet via Coinbase AgentKit.
+    // This method returns empty data; wallet address is passed in externally if available.
     try {
-      // Get wallet from storage
-      const walletRecord = await walletStorage.getUserWallet(userId);
-
-      if (!walletRecord) {
-        console.warn(`⚠️  No wallet found for user ${userId}`);
-        return {
-          address: '',
-          tokens: [],
-          nfts: [],
-          transactions: [],
-          contracts: [],
-          defiProtocols: [],
-        };
-      }
-
-      const walletAddress = walletRecord.walletAddress;
-      console.log(`✅ Found wallet address: ${walletAddress}`);
-
-      // TODO: Integrate with blockchain data providers to fetch:
-      // - Tokens and balances (Alchemy/Moralis/Etherscan API)
-      // - NFTs (Alchemy NFT API)
-      // - Transaction history (Etherscan/Alchemy)
-      // - DeFi protocol interactions
-      //
-      // For now, return minimal data with real wallet address
-      // This allows the skill to work while we add blockchain data fetching
-
       return {
-        address: walletAddress,
+        address: '',
         tokens: [],
         nfts: [],
         transactions: [],
@@ -374,7 +338,7 @@ export class EnhancedDataCollector {
         defiProtocols: [],
       };
     } catch (error) {
-      console.error(`❌ Failed to fetch wallet data for ${userId}:`, error);
+      console.error(`❌ Failed to fetch wallet data for ${_userId}:`, error);
       return {
         address: '',
         tokens: [],

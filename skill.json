@@ -34,19 +34,11 @@
     }
   },
   "dependencies": {
-    "@coinbase/agentkit": "^0.1.0",
     "commander": "^11.1.0",
     "jsonwebtoken": "^9.0.2",
     "viem": "^2.0.0"
   },
   "agentKits": [
-    {
-      "name": "coinbase-agentkit",
-      "version": "^0.1.0",
-      "source": "npm:@coinbase/agentkit",
-      "required": true,
-      "purpose": "Create and manage agent wallet for X402 payments"
-    },
     {
       "name": "web3-identity",
       "version": "^2.0.0",
@@ -73,14 +65,6 @@
         "key": "NETWORK",
         "description": "Network for agent wallet: base-mainnet or base-sepolia",
         "default": "base-mainnet"
-      },
-      {
-        "key": "CDP_API_KEY_ID",
-        "description": "Coinbase CDP API key for real wallet creation"
-      },
-      {
-        "key": "CDP_API_KEY_SECRET",
-        "description": "Coinbase CDP API secret"
       }
     ]
   },
