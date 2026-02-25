@@ -49,7 +49,7 @@ export const CATEGORY_KEYWORDS: Record<CanonicalCategory, string[]> = {
     'agent framework', 'agent orchestrat', 'multi-agent', 'agent os',
     'agent architect', 'agent system', 'agent workflow', 'agentic',
     'crew ai', 'autogen', 'langchain', 'langgraph', 'swarm',
-    'agent skill', 'agent tool',
+    'agent skill', 'agent tool', 'subagent', 'orchestrat', 'agent harness',
   ],
   'Context Engineering': [
     'context engineer', 'context window', 'context manag', 'memory manag',
@@ -65,22 +65,24 @@ export const CATEGORY_KEYWORDS: Record<CanonicalCategory, string[]> = {
     'coding agent', 'ai coding', 'copilot', 'code edit', 'refactor',
     'linter', 'debugg', 'test generat', 'code search', 'codebase',
     'claude code', 'cursor', 'continue dev', 'devin', 'openclaw',
-    'claude skill',
+    'claude skill', 'vb.net', 'coding standard', 'clean code', 'opencode',
   ],
   'AI Tools': [
     'gpt', 'llm', 'machine learning', 'neural', 'chatbot',
     'openai', 'anthropic', 'prompt engineer', 'inference', 'transformer',
     'gemini', 'image gen', 'text-to', 'ai-powered', 'ai agent',
+    'web search', 'tavily', 'ai note', 'ai ppt', 'voice gen', 'tts', 'audio gen',
   ],
   'Productivity': [
     'productivity', 'workflow', 'automation', 'efficiency', 'task management',
     'notion', 'calendar', 'time tracking', 'systematic', 'slide',
-    'template',
+    'template', 'saas integrat', 'ppt generat',
   ],
   'Wellness': [
     'wellness', 'health', 'fitness', 'meditation', 'mindfulness',
     'mental health', 'yoga', 'sleep', 'nutrition', 'self-care',
     'therapy', 'therapeutic', 'cbt', 'counseling', 'journaling',
+    'self-improv', 'accountability coach',
   ],
   'Education': [
     'education', 'learning', 'course', 'teach', 'tutorial',
@@ -97,12 +99,13 @@ export const CATEGORY_KEYWORDS: Record<CanonicalCategory, string[]> = {
   'Design': [
     'ui design', 'ux design', 'figma', 'typography', 'layout', 'prototype',
     'infographic', 'illustration', 'cover image', 'graphic design', 'ui/ux',
-    'design system', 'design tool',
+    'design system', 'design tool', 'ui audit', 'interface design', 'frontend design',
   ],
   'Development': [
     'developer', 'programming', 'software', 'engineering',
     'typescript', 'python', 'rust', 'cli', 'sdk', 'devtools',
-    'dev tool', 'url-to', 'converter',
+    'dev tool', 'url-to', 'converter', 'terraform',
+    'infrastructure as code', 'migration', 'rollout', 'linux',
   ],
   'Marketing': [
     'marketing', 'seo', 'content strategy', 'advertising',
@@ -111,10 +114,11 @@ export const CATEGORY_KEYWORDS: Record<CanonicalCategory, string[]> = {
     'cold email', 'drip', 'paywall', 'popup', 'a/b test',
     'split test', 'ad creative', 'competitor', 'social content',
     'social media', 'wechat', 'xiaohongshu', 'post to x',
+    'product launch', 'go-to-market', 'business growth',
   ],
   'Finance': [
     'finance', 'investing', 'trading', 'portfolio', 'wealth', 'stock market',
-    'budget', 'revenue', 'financial',
+    'budget', 'revenue', 'financial', 'dividend', 'screener', 'spending', 'balance',
   ],
 };
 
