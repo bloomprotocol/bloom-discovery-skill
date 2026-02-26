@@ -137,7 +137,7 @@ export class ManualQAFallback {
     result.tasteSpectrums = tasteSpectrums;
 
     console.log(`✅ Determined personality: ${dominantType} (confidence: ${result.confidence}%)`);
-    console.log(`📊 Taste Spectrums (Q&A): Learning=${tasteSpectrums.learning}, Decision=${tasteSpectrums.decision}, Novelty=${tasteSpectrums.novelty}, Risk=${tasteSpectrums.risk}`);
+    console.log(`📊 MentalOS (Q&A): Learning=${tasteSpectrums.learning}, Decision=${tasteSpectrums.decision}, Novelty=${tasteSpectrums.novelty}, Risk=${tasteSpectrums.risk}`);
 
     return result;
   }

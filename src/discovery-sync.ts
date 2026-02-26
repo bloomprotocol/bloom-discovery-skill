@@ -1,7 +1,7 @@
 /**
  * Discovery Sync (Standalone)
  *
- * Pulls newly discovered skills from the Taste Finder backend
+ * Pulls newly discovered skills from the Bloom Discovery backend
  * and appends them to `bloom-discoveries.md` for agent context.
  *
  * Stateless — uses a JSON state file for dedup tracking.
@@ -38,7 +38,7 @@ export interface SyncDiscoveriesOptions {
 const MD_FILE = 'bloom-discoveries.md';
 const STATE_FILE = '.bloom-discovery-state.json';
 
-const MD_HEADER = `# Bloom Taste Finder — Discovered Skills
+const MD_HEADER = `# Bloom Discovery — Discovered Skills
 > Auto-updated. Your agent grows smarter over time.
 `;
 
@@ -120,7 +120,7 @@ async function appendToMd(mdFilePath: string, entries: DiscoveryEntry[]): Promis
 // ─── Main ────────────────────────────────────────────────────────────────
 
 /**
- * Sync newly discovered skills from the Taste Finder backend.
+ * Sync newly discovered skills from the Bloom Discovery backend.
  *
  * 1. Fetch discoveries from GET /x402/agent/{agentUserId}/discoveries
  * 2. Filter out already-synced entries via state file

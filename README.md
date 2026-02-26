@@ -31,7 +31,7 @@ That's it. ~3 seconds.
 - **Categories & Strengths** — What you care about and what you're good at
 
 ### On the Dashboard
-- **4 Taste Spectrums** — Learning, Decision, Novelty, Risk (each 0-100)
+- **MentalOS Spectrum** — Learning, Decision, Novelty, Risk (each 0-100)
 - **AI-Era Playbook** — Personalized advice:
   - **Leverage** — Your style's advantage in the AI era
   - **Watch out** — Your blind spot
@@ -41,7 +41,7 @@ That's it. ~3 seconds.
 
 ---
 
-## 4 Taste Spectrums
+## MentalOS Spectrum
 
 | Spectrum | Low (0) | High (100) | Question |
 |----------|---------|------------|----------|

@@ -49,7 +49,7 @@ is where you spot the next paradigm shift.
 🏷️  Categories: AI Tools · Productivity · Wellness
    Interests: Machine Learning · Automation · Meditation
 
-📊 Taste Spectrums:
+🧠 MentalOS:
    Learning:  Try First ■■■■■░░░░░ Study First
    Decision:  Gut ■■■■■■░░░░ Analytical
    Novelty:   Early Adopter ■■■■░░░░░░ Proven First
@@ -59,13 +59,13 @@ is where you spot the next paradigm shift.
 
 🎯 Top 5 Recommended Skills:
 
-1. ai-code-review (95% match) · by Alice
+1. ai-code-review (95pts) · by Alice
    Automated code review using GPT-4
-   → https://clawhub.com/skills/ai-code-review
+   → https://github.com/alice/ai-code-review
 
-2. productivity-toolkit (88% match)
+2. productivity-toolkit (88pts)
    Streamline your workflow automation
-   → https://clawhub.com/skills/productivity
+   → https://github.com/prodtools/productivity
 
 ...
 

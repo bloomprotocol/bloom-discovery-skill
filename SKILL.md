@@ -1,6 +1,6 @@
 ---
 name: bloom-identity
-description: Generate Bloom Identity Card from conversation history and USER.md. Maps builder personality across 4 taste spectrums (Learning, Decision, Novelty, Risk), identifies personality type (Visionary/Explorer/Cultivator/Optimizer/Innovator), recommends matching tools from the Bloom skill catalog, and generates shareable dashboard. Use when user asks to "generate my bloom identity", "create identity card", "analyze my profile", or "discover my personality".
+description: Generate Bloom Identity Card from conversation history and USER.md. Maps builder personality across 4 MentalOS dimensions (Learning, Decision, Novelty, Risk), identifies personality type (Visionary/Explorer/Cultivator/Optimizer/Innovator), recommends matching tools from the Bloom skill catalog, and generates shareable dashboard. Use when user asks to "generate my bloom identity", "create identity card", "analyze my profile", or "discover my personality".
 homepage: https://bloomprotocol.ai
 metadata:
   {
@@ -62,9 +62,9 @@ Returns:
 - Personality type (Visionary/Explorer/Cultivator/Optimizer/Innovator)
 - Confidence score
 - Custom tagline and description
-- 4 taste spectrums (Learning, Decision, Novelty, Risk)
+- MentalOS spectrum (Learning, Decision, Novelty, Risk)
 - Main categories and subcategories
-- Recommended tools from ClawHub, Claude Code, and GitHub (with match scores)
+- Recommended tools from the Bloom skill catalog (with match scores)
 - Dashboard link with auth token
 - Agent wallet address (optional, on Base network)
 
@@ -93,7 +93,7 @@ the hype and focuses on real-world impact.
 🏷️  Categories: Crypto · DeFi · Web3
    Interests: Smart Contracts · Layer 2 · Cross-chain
 
-📊 Taste Spectrums:
+🧠 MentalOS:
    Learning:  Try First ■■■■■■■■░░ Study First
    Decision:  Gut ■■■░░░░░░░ Analytical
    Novelty:   Early Adopter ■■■■■■■░░░ Proven First
@@ -138,7 +138,7 @@ the hype and focuses on real-world impact.
   - Conversation history (OpenClaw sessions JSONL) - enrichment
   - Twitter/X (bird CLI) - 15% weight, optional
   - Wallet creation only (viem + AES-256-GCM encryption) - NOT analyzed
-- **Integration**: Coinbase AgentKit (optional) + ClawHub API + bird CLI
+- **Integration**: Coinbase AgentKit (optional) + Bloom catalog API + bird CLI
 - **Privacy**: No wallet transaction analysis, conversation-first approach
 
 ## Requirements

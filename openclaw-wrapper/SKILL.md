@@ -21,7 +21,7 @@ This skill requires the following permissions:
 
 **🌐 External Network** - Connects to Bloom Protocol API to:
 - Generate your shareable dashboard URL
-- Store your identity card (personality type, taste spectrums, categories)
+- Store your identity card (personality type, MentalOS spectrum, categories)
 - Enable future features (skill recommendations, creator tipping)
 
 **Your Control**: Your conversation is analyzed locally. You decide whether to share your identity card publicly via the dashboard link.
@@ -36,11 +36,11 @@ Your personalized Bloom Identity Card reveals:
 
 - **🎴 Personality Type** – Visionary, Explorer, Cultivator, Optimizer, or Innovator
 - **💬 Custom Tagline** – A one-liner that captures your style
-- **📊 4 Taste Spectrums** – Learning, Decision, Novelty, Risk (each 0-100)
+- **🧠 MentalOS Spectrum** – Learning, Decision, Novelty, Risk (each 0-100)
 - **🔍 Hidden Pattern Insight** – Something about yourself you might not realize
 - **🧭 AI-Era Playbook** – Your leverage, blind spot, and next move for the AI era
 - **💪 Strengths** – Builder, Designer, Teacher, Analyst, etc.
-- **🎯 Tool Recommendations** – Matched from ClawHub, GitHub, and Claude Code
+- **🎯 Tool Recommendations** – Matched from the Bloom skill catalog
 - **🔗 Shareable Dashboard** – Your card at bloomprotocol.ai
 
 ## ⚡️ How It Works
@@ -89,7 +89,7 @@ Your agent doesn't just recommend once — it **learns and improves** over time.
 
 3. **Discovery Sync** — New skills you discover through Bloom are synced back to a local `bloom-discoveries.md` file, building a growing context of your preferences.
 
-4. **TTL Refresh** — Recommendations refresh every 7 days, incorporating your latest interactions and newly published skills from ClawHub, Claude Code, and GitHub.
+4. **TTL Refresh** — Recommendations refresh every 7 days, incorporating your latest interactions and newly published skills from the Bloom catalog.
 
 ### Why We Don't Auto-Install
 
@@ -140,7 +140,7 @@ hype. AI agents are where you spot the next big thing.
 🏷️  Categories: AI Tools · Productivity · Automation
    Interests: AI Agents · No-code Tools · Creative AI
 
-📊 Taste Spectrums:
+🧠 MentalOS:
    Learning:  Try First ■■■■■■■■░░ Study First
    Decision:  Gut ■■■░░░░░░░ Analytical
    Novelty:   Early Adopter ■■■■■■■░░░ Proven First
@@ -169,7 +169,7 @@ hype. AI agents are where you spot the next big thing.
 
 ### Quick Install (via ClawHub)
 ```bash
-clawhub install bloom-taste-finder
+clawhub install bloom-discovery
 ```
 
 ### Manual Install
@@ -225,7 +225,7 @@ echo "Your conversation here" | \
 - ✅ No personal identifiable information
 
 **What We Store**:
-- Your identity card (personality type, taste spectrums, categories)
+- Your identity card (personality type, MentalOS spectrum, categories)
 - Dashboard URL for sharing
 
 **What We Don't Collect**:
@@ -252,7 +252,7 @@ Your identity card is stored on Bloom Protocol to power your shareable dashboard
 **External Connections**:
 - `api.bloomprotocol.ai` - Identity card storage
 - `bloomprotocol.ai` - Dashboard hosting
-- `clawhub.ai` - Skill recommendations (optional)
+- `api.bloomprotocol.ai/skills` - Skill catalog & recommendations
 
 **Open Source**: All code is public at [gitlab.com/bloom-protocol/bloom-discovery-skill](https://gitlab.com/bloom-protocol/bloom-discovery-skill) for security audits.
 
@@ -283,8 +283,8 @@ Balanced across all spectrums. Combines conviction with experimentation.
 
 ## 🧬 Technical Details
 
-- **Version**: 2.1.0
-- **Analysis Engine**: 4-dimension taste spectrums + category mapping
+- **Version**: 3.0.0
+- **Analysis Engine**: MentalOS spectrum (4 dimensions) + category mapping
 - **Primary Signal**: USER.md (role, tech stack, interests)
 - **Session Context**: Last ~120 messages (~5KB)
 - **Processing Time**: ~2-5 seconds

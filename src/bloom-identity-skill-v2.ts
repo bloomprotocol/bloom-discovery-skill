@@ -654,36 +654,91 @@ export const bloomDiscoverySkill = {
 export const bloomIdentitySkillV2 = bloomDiscoverySkill;
 
 /**
- * Format success message for user
+ * Format success message for OpenClaw agent reply.
+ *
+ * Structure:
+ *   1. Card link (most important)
+ *   2. Personality + tagline + description
+ *   3. MentalOS Spectrum (4 axes)
+ *   4. Hidden insight
+ *   5. AI Playbook (actionable advice)
+ *   6. Skill recommendations (inline top 3 + discover link)
  */
 function formatSuccessMessage(result: any): string {
   const { identityData, recommendations } = result;
   const emoji = getPersonalityEmoji(identityData.personalityType);
 
-  // Link always first — the most important thing to surface
   let msg = '';
+
+  // 1. Card link — always first
   if (result.dashboardUrl) {
     msg += `🌸 **Your Bloom Identity Card is ready!**`;
     msg += `\n🔗 ${result.dashboardUrl}`;
     msg += `\n`;
+  } else {
+    msg += `🌸 **Bloom Identity generated!**\n`;
   }
 
+  // 2. Personality + description
   msg += `\n${emoji} **${identityData.personalityType}** — "${identityData.customTagline}"`;
   msg += `\n\n${identityData.customLongDescription || identityData.customDescription}`;
 
+  // 3. MentalOS Spectrum
+  if (identityData.tasteSpectrums) {
+    const s = identityData.tasteSpectrums;
+    msg += `\n\n🧠 **MentalOS**`;
+    msg += `\n├ Learning: ${formatSpectrum(s.learning, 'Try First', 'Study First')}`;
+    msg += `\n├ Decision: ${formatSpectrum(s.decision, 'Gut', 'Analytical')}`;
+    msg += `\n├ Novelty:  ${formatSpectrum(s.novelty, 'Early Adopter', 'Proven First')}`;
+    msg += `\n└ Risk:     ${formatSpectrum(s.risk, 'All In', 'Measured')}`;
+  }
+
+  // 4. Hidden insight
   if (identityData.hiddenInsight) {
     msg += `\n\n🔍 *${identityData.hiddenInsight.brief}*`;
   }
 
+  // 5. AI Playbook
+  if (identityData.aiPlaybook) {
+    msg += `\n\n📖 **Your AI Playbook**`;
+    msg += `\n⚡ **Leverage:** ${identityData.aiPlaybook.leverage}`;
+    msg += `\n⚠️ **Watch out:** ${identityData.aiPlaybook.watchOut}`;
+    msg += `\n🎯 **Next move:** ${identityData.aiPlaybook.nextMove}`;
+  }
+
+  // 6. Categories
   msg += `\n\n🏷️ ${identityData.mainCategories.join(' • ')}`;
 
-  // Curated discover link — soft discovery tone, no commercial language
-  if (result.discoverUrl && recommendations?.length > 0) {
-    msg += `\n\n🔍 I found ${recommendations.length} skills that match your profile:`;
-    msg += `\n🔗 ${result.discoverUrl}`;
+  // 7. Skill recommendations
+  if (recommendations?.length > 0) {
+    if (result.discoverUrl) {
+      // Show top 3 inline + full list link
+      msg += `\n\n🔍 **${recommendations.length} skills matched to your profile:**`;
+      for (const r of recommendations.slice(0, 3)) {
+        msg += `\n- ${r.skillName} (${r.matchScore}pts)`;
+      }
+      if (recommendations.length > 3) {
+        msg += `\n- ...and ${recommendations.length - 3} more`;
+      }
+      msg += `\n🔗 ${result.discoverUrl}`;
+    } else {
+      // No curated list link — show top 5 inline
+      msg += `\n\n🔍 **Top skills for you:**`;
+      for (const r of recommendations.slice(0, 5)) {
+        msg += `\n- [${r.skillName}](${r.url}) — ${r.matchScore}pts`;
+      }
+    }
   }
 
   return msg;
+}
+
+/** Format a spectrum value as a visual bar */
+function formatSpectrum(value: number, lowLabel: string, highLabel: string): string {
+  const position = Math.round(value / 10);
+  const bar = '─'.repeat(position) + '●' + '─'.repeat(10 - position);
+  const label = value < 35 ? lowLabel : value > 65 ? highLabel : 'Balanced';
+  return `[${bar}] ${value} — ${label}`;
 }
 
 function getPersonalityEmoji(type: PersonalityType): string {
