@@ -613,32 +613,19 @@ export const bloomDiscoverySkill = {
     }
 
     // ── Identity mode ──
+    // OpenClaw writes conversation history to session files on disk
+    // (~/.openclaw/agents/main/sessions/). The skill reads those files
+    // via collect() → collectConversationMemory() to get ~120 messages
+    // of past conversation. We intentionally do NOT pass conversationText
+    // here — session files contain richer historical data.
     const skill = new BloomIdentitySkillV2();
 
-    // Check if this is a response to manual Q&A
     const manualAnswers = context.manualAnswers;
-
-    // Build conversation text from OpenClaw context.
-    // OpenClaw passes conversation history as context.conversationHistory (string)
-    // or context.messages (array of {role, content}).
-    let conversationText: string | undefined;
-    if (context.conversationHistory && typeof context.conversationHistory === 'string') {
-      conversationText = context.conversationHistory;
-    } else if (Array.isArray(context.messages) && context.messages.length > 0) {
-      // Convert messages array to User:/Assistant: text format
-      conversationText = context.messages
-        .map((m: { role: string; content: string }) => {
-          const prefix = m.role === 'user' ? 'User' : 'Assistant';
-          return `${prefix}: ${m.content}`;
-        })
-        .join('\n');
-    }
 
     const result = await skill.execute(context.userId, {
       mode: ExecutionMode.AUTO,
       skipShare: !context.enableShare,
       manualAnswers,
-      conversationText,
     });
 
     if (!result.success) {
