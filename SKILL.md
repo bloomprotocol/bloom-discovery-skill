@@ -1,6 +1,6 @@
 ---
 name: bloom-identity
-description: Generate Bloom Identity Card from conversation history and USER.md. Maps builder personality across 4 taste spectrums (Learning, Decision, Novelty, Risk), identifies personality type (Visionary/Explorer/Cultivator/Optimizer/Innovator), recommends matching tools from ClawHub + Claude Code + GitHub, and generates shareable dashboard. Use when user asks to "generate my bloom identity", "create identity card", "analyze my profile", or "discover my personality".
+description: Generate Bloom Identity Card from conversation history and USER.md. Maps builder personality across 4 taste spectrums (Learning, Decision, Novelty, Risk), identifies personality type (Visionary/Explorer/Cultivator/Optimizer/Innovator), recommends matching tools from the Bloom skill catalog, and generates shareable dashboard. Use when user asks to "generate my bloom identity", "create identity card", "analyze my profile", or "discover my personality".
 homepage: https://bloomprotocol.ai
 metadata:
   {
