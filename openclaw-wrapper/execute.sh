@@ -24,7 +24,7 @@ if [ ! -d "$BLOOM_SKILL_DIR" ] || [ ! -d "$BLOOM_SKILL_DIR/src" ]; then
 
   # Clone the repo
   echo "⬇️  Downloading from GitHub..."
-  if ! git clone --depth 1 https://github.com/unicornbloom/bloom-identity-skill.git "$BLOOM_SKILL_DIR" 2>/dev/null; then
+  if ! git clone --depth 1 https://gitlab.com/bloom-protocol/bloom-discovery-skill.git "$BLOOM_SKILL_DIR" 2>/dev/null; then
     echo "❌ Error: Failed to download Bloom Identity Skill"
     echo "   Please check your internet connection and try again"
     exit 1
