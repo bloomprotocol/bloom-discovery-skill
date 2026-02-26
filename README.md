@@ -2,9 +2,9 @@
 
 **Understand how you learn, decide, and build — then get the right tools for the AI era.**
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue)](https://gitlab.com/bloom-protocol/bloom-discovery-skill)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue)](https://gitlab.com/bloom-protocol/bloom-discovery-skill)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-Compatible-green)](https://openclaw.ai)
-[![ClawHub](https://img.shields.io/badge/ClawHub-Published-purple)](https://clawhub.ai/unicornbloom/bloom-taste-finder)
+[![ClawHub](https://img.shields.io/badge/ClawHub-Published-purple)](https://clawhub.ai/unicornbloom/bloom-discovery)
 [![License](https://img.shields.io/badge/license-MIT-orange)](LICENSE)
 
 ---
@@ -36,7 +36,7 @@ That's it. ~3 seconds.
   - **Leverage** — Your style's advantage in the AI era
   - **Watch out** — Your blind spot
   - **Next move** — Specific action based on your learning x risk combo
-- **Tool Recommendations** — From ClawHub, GitHub, and Claude Code
+- **Tool Recommendations** — From the Bloom skill catalog, scored and matched to your profile
 - **Shareable Link** — `bloomprotocol.ai/agents/{id}`
 
 ---
@@ -79,7 +79,7 @@ Bloom surfaces insights you might not see yourself, in priority order:
 2. **Build taste profile** — 4 spectrums + personality type + strengths + categories
 3. **Detect hidden pattern** — 6 detectors run in priority order, first match wins
 4. **Generate AI playbook** — Leverage / watch-out / next-move based on spectrum combos
-5. **Recommend tools** — Match profile against ClawHub, GitHub, and Claude Code
+5. **Recommend tools** — Match profile against the Bloom skill catalog (scored by category, personality boost, and community backing)
 6. **Create dashboard** — Shareable card at `bloomprotocol.ai/agents/{id}`
 
 ---
@@ -112,7 +112,7 @@ echo "your conversation" | npx tsx scripts/run-from-context.ts --user-id <userId
 ### ClawHub
 
 ```bash
-clawhub install bloom-taste-finder
+clawhub install bloom-discovery
 ```
 
 ---
@@ -145,7 +145,7 @@ NETWORK=base-mainnet
 ## Links
 
 - **Homepage**: [bloomprotocol.ai](https://bloomprotocol.ai)
-- **ClawHub**: [clawhub.ai/unicornbloom/bloom-taste-finder](https://clawhub.ai/unicornbloom/bloom-taste-finder)
+- **ClawHub**: [clawhub.ai/unicornbloom/bloom-discovery](https://clawhub.ai/unicornbloom/bloom-discovery)
 - **Source**: [gitlab.com/bloom-protocol/bloom-discovery-skill](https://gitlab.com/bloom-protocol/bloom-discovery-skill)
 - **Dashboard**: [bloomprotocol.ai/agents](https://bloomprotocol.ai/agents)
 
