@@ -1,6 +1,6 @@
-# Bloom Identity - OpenClaw Bot Wrapper
+# Bloom Identity — OpenClaw Bot Wrapper
 
-This directory contains the OpenClaw skill wrapper for Bloom Identity analysis.
+OpenClaw skill wrapper for Bloom Identity analysis. Zero questions asked — reads your conversation memory and reveals your builder personality, blind spots, and matched tools.
 
 ## Purpose
 
@@ -117,7 +117,7 @@ echo "test conversation" | bash execute.sh test-user-123
 
 - `OPENCLAW_USER_ID` - Auto-provided by OpenClaw bot
 - `JWT_SECRET` - For dashboard token generation
-- `DASHBOARD_URL` - Dashboard URL (default: https://preview.bloomprotocol.ai)
+- `DASHBOARD_URL` - Dashboard URL (default: https://bloomprotocol.ai)
 - `NETWORK` - Blockchain network (default: base-mainnet)
 
 ## License
