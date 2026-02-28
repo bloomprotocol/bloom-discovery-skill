@@ -76,7 +76,6 @@ User: Mostly coding assistants and LLMs" | bash ~/.openclaw/skills/bloom-identit
 |---------|----------|------------------|
 | Data Source | Session files | Conversation context |
 | User ID | Required | Provided by bot |
-| Twitter | Optional | Skipped (default) |
 | Wallet | Creates new | Creates new |
 | Min Messages | 3 | 3 |
 | Execution | External process | Bot context |
