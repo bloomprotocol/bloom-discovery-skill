@@ -1,6 +1,6 @@
-# Bloom Identity — OpenClaw Bot Wrapper
+# Bloom Discovery Skill
 
-OpenClaw skill wrapper for Bloom Identity analysis. Zero questions asked — reads your conversation memory and reveals your builder personality, blind spots, and matched tools.
+Zero questions asked — reads your conversation memory and reveals your builder personality, blind spots, and matched tools.
 
 ## Purpose
 
