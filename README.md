@@ -76,7 +76,7 @@ Bloom surfaces insights you might not see yourself, in priority order:
 ## How It Works
 
 1. **Collect signals** — USER.md (primary) + conversation history (~120 messages) + optional feedback
-2. **Build taste profile** — 4 spectrums + personality type + strengths + categories
+2. **Build personality profile** — 4 spectrums + personality type + strengths + categories
 3. **Detect hidden pattern** — 6 detectors run in priority order, first match wins
 4. **Generate AI playbook** — Leverage / watch-out / next-move based on spectrum combos
 5. **Recommend tools** — Match profile against the Bloom skill catalog (scored by category, personality boost, and community backing)

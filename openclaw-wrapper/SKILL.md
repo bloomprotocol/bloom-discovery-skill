@@ -14,7 +14,7 @@ permissions:
 
 # Bloom Discovery
 
-**Discover your builder taste — straight from your conversations.**
+**Discover your builder personality and get personalized tool recommendations.**
 
 ## Trust & Privacy
 
@@ -44,12 +44,12 @@ Your personalized Bloom Identity Card reveals:
 
 Just type `/bloom` in your chat.
 
-We analyze your USER.md and last ~120 messages to understand:
-- **What excites you** — AI agents? productivity hacks? creative tools?
-- **How you engage** — deep dives vs. quick experiments
-- **Your taste profile** — 4 spectrums: try-first or study-first? gut or analytical? early adopter or proven-first? all-in or measured?
+Bloom reads your USER.md and recent conversations to:
+- **Map your personality** — across 4 dimensions (Learning, Decision, Novelty, Risk)
+- **Find your blind spots** — patterns you might not notice yourself
+- **Recommend matched tools** — personalized picks from the Bloom skill catalog
 
-No complex setup. No wallet signatures. No auth flows.
+No surveys. No complex setup. No auth flows.
 
 ## Quick Start
 
