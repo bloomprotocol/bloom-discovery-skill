@@ -1,11 +1,26 @@
 #!/usr/bin/env bash
 
-# Bloom Identity OpenClaw Wrapper
+# Bloom Discovery — OpenClaw Skill Wrapper
 #
-# Auto-installs bloom-identity-skill on first run
-# Uses the last ~120 messages for accurate personality detection
+# DATA FLOW:
+#   1. Reads your last ~120 messages from local session file
+#   2. Analyzes conversation ON YOUR MACHINE (no raw text leaves your device)
+#   3. Sends ONLY analysis results to Bloom API:
+#      - Personality type (e.g. "The Visionary")
+#      - MentalOS spectrum scores (4 numbers, 0-100)
+#      - Interest categories (e.g. "AI Tools", "Productivity")
+#      - Generated tagline and description
+#   4. Returns your identity card + dashboard link
+#
+# WHAT IS NEVER SENT: raw conversation text, message content, PII
+#
+# Source: https://github.com/bloomprotocol/bloom-discovery-skill
+# Verify: inspect scripts/run-from-session.ts and src/bloom-identity-skill-v2.ts
 
 set -e
+
+# Canonical source repository
+BLOOM_REPO="https://github.com/bloomprotocol/bloom-discovery-skill.git"
 
 # Get the directory of this script
 WRAPPER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,50 +31,55 @@ BLOOM_SKILL_DIR="${WORKSPACE_DIR}/bloom-identity-skill"
 
 # Auto-install bloom-identity-skill if not present
 if [ ! -d "$BLOOM_SKILL_DIR" ] || [ ! -d "$BLOOM_SKILL_DIR/src" ]; then
-  echo "📦 First-time setup: Installing Bloom Identity Skill..."
+  echo "First-time setup: Installing Bloom Identity Skill..."
   echo ""
 
   # Create workspace directory if needed
   mkdir -p "$WORKSPACE_DIR"
 
-  # Clone the repo
-  echo "⬇️  Downloading from GitHub..."
-  if ! git clone --depth 1 https://gitlab.com/bloom-protocol/bloom-discovery-skill.git "$BLOOM_SKILL_DIR" 2>/dev/null; then
-    echo "❌ Error: Failed to download Bloom Identity Skill"
+  # Clone from canonical GitLab repository (pinned to release tag)
+  BLOOM_VERSION="v3.1.0"
+  echo "Downloading from GitLab (bloom-protocol/bloom-discovery-skill@${BLOOM_VERSION})..."
+  if ! git clone --depth 1 --branch "$BLOOM_VERSION" "$BLOOM_REPO" "$BLOOM_SKILL_DIR" 2>/dev/null; then
+    echo "Error: Failed to download Bloom Identity Skill"
     echo "   Please check your internet connection and try again"
+    echo "   Repo: $BLOOM_REPO"
     exit 1
   fi
 
   # Install dependencies
-  echo "📦 Installing dependencies..."
+  echo "Installing dependencies..."
   cd "$BLOOM_SKILL_DIR"
-  if ! npm install --silent 2>/dev/null; then
-    echo "⚠️  Warning: npm install had issues, but continuing..."
+  if ! npm install --silent; then
+    echo "Warning: npm install had issues, but continuing..."
   fi
 
-  echo "✅ Installation complete!"
+  echo "Installation complete!"
   echo ""
 fi
 
-# Check for required environment variables
+# Generate .env with secure defaults if not present
 if [ ! -f "$BLOOM_SKILL_DIR/.env" ]; then
-  echo "⚙️  Setting up configuration..."
+  echo "Setting up configuration..."
 
   # Copy .env.example if it exists
   if [ -f "$BLOOM_SKILL_DIR/.env.example" ]; then
     cp "$BLOOM_SKILL_DIR/.env.example" "$BLOOM_SKILL_DIR/.env"
-    echo "📝 Created .env file from template"
-    echo "   Edit $BLOOM_SKILL_DIR/.env to customize settings"
+    echo "Created .env file from template"
   else
-    # Create minimal .env
-    cat > "$BLOOM_SKILL_DIR/.env" << 'EOF'
+    # Generate a random JWT secret (not a hardcoded default)
+    RANDOM_SECRET=$(openssl rand -hex 32 2>/dev/null || head -c 64 /dev/urandom | od -An -tx1 | tr -d ' \n' | head -c 64)
+
+    cat > "$BLOOM_SKILL_DIR/.env" << EOF
 # Bloom Identity Configuration
-JWT_SECRET=default_secret_change_me
+# JWT_SECRET: auto-generated random secret for dashboard token signing
+# This token is used ONLY for your shareable dashboard URL, not for OpenClaw auth
+JWT_SECRET=${RANDOM_SECRET}
 DASHBOARD_URL=https://bloomprotocol.ai
 BLOOM_API_URL=https://api.bloomprotocol.ai
 NETWORK=base-mainnet
 EOF
-    echo "📝 Created default .env file"
+    echo "Created .env with auto-generated JWT secret"
   fi
   echo ""
 fi
@@ -89,14 +109,14 @@ if [ -z "$SESSION_FILE" ]; then
     SESSION_FILE=$(ls -t "$OPENCLAW_SESSIONS"/*.jsonl 2>/dev/null | head -1)
 
     if [ -n "$SESSION_FILE" ]; then
-      echo "📁 Using session file: $(basename "$SESSION_FILE")"
+      echo "Using session file: $(basename "$SESSION_FILE")"
     fi
   fi
 fi
 
 # Validate inputs
 if [ -z "$USER_ID" ]; then
-  echo "❌ Error: USER_ID required"
+  echo "Error: USER_ID required"
   echo ""
   echo "Usage:"
   echo "  /bloom                  # Auto-detects session and user"
@@ -107,14 +127,14 @@ if [ -z "$USER_ID" ]; then
 fi
 
 if [ -z "$SESSION_FILE" ] || [ ! -f "$SESSION_FILE" ]; then
-  echo "❌ Error: Session file not found"
+  echo "Error: Session file not found"
   echo ""
   echo "Please ensure you have an active OpenClaw conversation"
   echo "Session files are stored at: ~/.openclaw/agents/main/sessions/"
   exit 1
 fi
 
-echo "🌸 Bloom Identity - Analyzing your conversation..."
+echo "Bloom Identity - Analyzing your conversation..."
 echo ""
 
 # Run analyzer with session file

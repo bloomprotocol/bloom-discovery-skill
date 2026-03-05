@@ -85,7 +85,7 @@
     "steps": [
       {
         "action": "clone",
-        "source": "https://gitlab.com/bloom-protocol/bloom-discovery-skill.git"
+        "source": "https://github.com/bloomprotocol/bloom-discovery-skill.git"
       },
       {
         "action": "install_dependencies",

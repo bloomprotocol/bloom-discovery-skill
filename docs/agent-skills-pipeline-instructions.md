@@ -138,10 +138,10 @@ Summary: New: {n}, Existed: {n}, Errors: {n}, Flagged: {n}
 
 ## Source Code & Codebase
 
-The Bloom skill codebase is hosted on GitLab (NOT GitHub):
-- Skill: https://gitlab.com/bloom-protocol/bloom-discovery-skill
-- Backend: https://gitlab.com/bloom-protocol/bloom-protocol-be
-- Frontend: https://gitlab.com/bloom-protocol/bloom-protocol-fe
+The Bloom skill codebase:
+- Skill: https://github.com/bloomprotocol/bloom-discovery-skill (public)
+- Backend: https://gitlab.com/bloom-protocol/bloom-protocol-be (private)
+- Frontend: https://gitlab.com/bloom-protocol/bloom-protocol-fe (private)
 
 Do NOT submit these repos as skills. They are our own codebase.
 

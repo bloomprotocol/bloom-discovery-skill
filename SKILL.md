@@ -28,7 +28,7 @@ Generate personalized Bloom Identity Cards based on **USER.md** (primary identit
   identifiable information, and wallet keys are never transmitted.
 - **User-initiated** — Only runs when you explicitly invoke the skill.
 - **Open source** — Full source code at
-  [gitlab.com/bloom-protocol/bloom-discovery-skill](https://gitlab.com/bloom-protocol/bloom-discovery-skill)
+  [github.com/bloomprotocol/bloom-discovery-skill](https://github.com/bloomprotocol/bloom-discovery-skill)
 
 ## Data Sources
 
@@ -88,7 +88,7 @@ Generate personalized Bloom Identity Cards based on **USER.md** (primary identit
 ## Installation
 
 ```bash
-git clone https://gitlab.com/bloom-protocol/bloom-discovery-skill.git
+git clone https://github.com/bloomprotocol/bloom-discovery-skill.git
 cd bloom-identity-skill
 npm install
 ```

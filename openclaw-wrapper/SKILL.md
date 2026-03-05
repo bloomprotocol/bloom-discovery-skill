@@ -26,7 +26,7 @@ permissions:
   identifiable information, and wallet keys are never transmitted.
 - **User-initiated** — Only runs when you explicitly invoke `/bloom`.
 - **Open source** — Full source code at
-  [gitlab.com/bloom-protocol/bloom-discovery-skill](https://gitlab.com/bloom-protocol/bloom-discovery-skill)
+  [github.com/bloomprotocol/bloom-discovery-skill](https://github.com/bloomprotocol/bloom-discovery-skill)
 
 ## What You Get
 
@@ -158,7 +158,7 @@ Bloom Identity · Built for indie builders
 clawhub install bloom-discovery
 ```
 
-On first run, clones source from [gitlab.com/bloom-protocol/bloom-discovery-skill](https://gitlab.com/bloom-protocol/bloom-discovery-skill) into `~/.openclaw/workspace/`, runs `npm install`, and creates a `.env` with auto-generated JWT secret. Delete `~/.openclaw/workspace/bloom-identity-skill/` to fully uninstall.
+On first run, clones source from [github.com/bloomprotocol/bloom-discovery-skill](https://github.com/bloomprotocol/bloom-discovery-skill) into `~/.openclaw/workspace/`, runs `npm install`, and creates a `.env` with auto-generated JWT secret. Delete `~/.openclaw/workspace/bloom-identity-skill/` to fully uninstall.
 
 ## Troubleshooting
 
