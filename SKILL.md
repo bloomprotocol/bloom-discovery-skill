@@ -2,8 +2,8 @@
 name: bloom-identity
 description: >
   Zero questions asked. Reads your conversation memory in 60 seconds
-  and reveals your builder personality, blind spots, and matched tools —
-  ready to screenshot and share.
+  and maps your MentalOS — builder personality, blind spots, and
+  matched tools — ready to screenshot and share.
 homepage: https://bloomprotocol.ai
 metadata:
   {

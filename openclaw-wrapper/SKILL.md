@@ -2,8 +2,8 @@
 name: bloom
 description: >
   Zero questions asked. Reads your conversation memory in 60 seconds
-  and reveals your builder personality, blind spots, and matched tools —
-  ready to screenshot and share.
+  and maps your MentalOS — builder personality, blind spots, and
+  matched tools — ready to screenshot and share.
 user-invocable: true
 command-dispatch: tool
 metadata: {"requires": {"bins": ["node", "npx"], "env": ["OPENCLAW_USER_ID"]}, "optional_env": ["JWT_SECRET", "BLOOM_API_URL", "DASHBOARD_URL", "NETWORK"]}
@@ -45,7 +45,7 @@ Your personalized Bloom Identity Card reveals:
 Just type `/bloom` in your chat.
 
 Bloom reads your USER.md and recent conversations to:
-- **Map your personality** — across 4 dimensions (Learning, Decision, Novelty, Risk)
+- **Map your MentalOS** — your operating style across 4 dimensions (Learning, Decision, Novelty, Risk)
 - **Find your blind spots** — patterns you might not notice yourself
 - **Recommend matched tools** — personalized picks from the Bloom skill catalog
 
