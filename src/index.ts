@@ -13,7 +13,7 @@ const program = new Command();
 program
   .name('bloom-identity')
   .description('Generate Bloom Identity Card from Twitter/X and on-chain data')
-  .version('3.0.0')
+  .version('4.0.0')
   .requiredOption('--user-id <userId>', 'OpenClaw user ID')
   .option('--mode <mode>', 'Execution mode: auto, manual, or hybrid', 'auto')
   .option('--skip-share', 'Skip Twitter share link generation', false)

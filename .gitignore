@@ -16,3 +16,6 @@ bloom-discoveries.md
 *.backup
 *.pem
 *.key
+
+# Test files that may contain env-specific config
+.env.test

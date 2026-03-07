@@ -19,6 +19,7 @@ import { DISPLAY_CATEGORIES, DISPLAY_CATEGORY_MAP } from './types/categories';
 import { syncDiscoveries, DiscoveryEntry } from './discovery-sync';
 import { parseUserMd, UserMdSignals } from './parsers/user-md-parser';
 import { mergeSignals, MergedSignals, FeedbackData } from './analyzers/signal-merger';
+import { privatizeSpectrums, conversationFingerprint } from './utils/privacy';
 
 // Re-export for backwards compatibility
 export { PersonalityType };
@@ -119,6 +120,9 @@ export class BloomIdentitySkillV2 {
       console.log(`🎴 Generating Bloom Identity for user: ${userId}`);
 
       const mode = options?.mode || ExecutionMode.AUTO;
+
+      // Capture raw conversation text for fingerprinting (hash only — never sent raw)
+      const rawConversationText = options?.conversationText;
 
       // Step 1: Try data collection (unless manual mode)
       let identityData: IdentityData | null = null;
@@ -314,11 +318,19 @@ export class BloomIdentitySkillV2 {
         confidence: dataQuality,
         mode: (usedManualQA ? 'manual' : 'data') as 'data' | 'manual',
         dimensions,
-        tasteSpectrums: identityData!.tasteSpectrums,
+        // LDP: noise spectrum scores before transmission (user sees originals)
+        tasteSpectrums: identityData!.tasteSpectrums
+          ? privatizeSpectrums(identityData!.tasteSpectrums)
+          : undefined,
         strengths: identityData!.strengths,
         hiddenInsight: identityData!.hiddenInsight,
         aiPlaybook: identityData!.aiPlaybook,
         recommendations,
+        // SHA-256 fingerprint of conversation (irreversible, for deduplication only)
+        conversationHash: rawConversationText
+          ? conversationFingerprint(rawConversationText)
+          : undefined,
+        privacyVersion: 'ldp-1.0',
       };
 
       try {
@@ -565,7 +577,7 @@ function formatCategoriesList(
 export const bloomDiscoverySkill = {
   name: 'bloom-discovery',
   description: 'Generate your personalized Bloom Identity Card, browse skills, and discover matching projects',
-  version: '3.0.0',
+  version: '4.0.0',
   aliases: ['bloom-identity'],
 
   triggers: [
