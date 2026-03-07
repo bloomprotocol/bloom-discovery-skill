@@ -1,43 +1,101 @@
-# 🌸 Bloom Discovery
+# Bloom Discovery Skill
 
-**Understand how you learn, decide, and build — then get the right tools for the AI era.**
+**Don't browse 13,000 skills. Browse use cases.**
 
-[![Version](https://img.shields.io/badge/version-3.1.0-blue)](https://github.com/bloomprotocol/bloom-discovery-skill)
+[![Version](https://img.shields.io/badge/version-4.0.0-blue)](https://github.com/bloomprotocol/bloom-discovery-skill)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-Compatible-green)](https://openclaw.ai)
 [![ClawHub](https://img.shields.io/badge/ClawHub-Published-purple)](https://clawhub.ai/unicornbloom/bloom-discovery)
 [![License](https://img.shields.io/badge/license-MIT-orange)](LICENSE)
 
 ---
 
-## What Is This?
+## The Problem
 
-Bloom Discovery analyzes your conversations and USER.md to build a **builder profile** — how you learn, how you make decisions, what your strengths are — then recommends tools matched to your style.
-
-```bash
-/bloom
-```
-
-That's it. ~3 seconds.
+| Without Bloom | With Bloom |
+|--------------|------------|
+| Browse 13,000 skills manually | Describe your intent, get matched use cases |
+| Install skills one by one, hope they work together | Each use case = tested skill combination |
+| No idea if your setup is complete | Verify config → see what's missing |
+| No proof of your expertise | Claim SBT → on-chain verified identity |
+| Recommendations based on popularity | Recommendations based on how you actually work |
 
 ---
 
-## What You Get
+## What It Does
 
-### On the Card
-- **Personality Type** — Visionary, Explorer, Cultivator, Optimizer, or Innovator
-- **Custom Tagline** — One-liner that captures your style
-- **3-Sentence Description** — Your personality + learning/decision style + AI-era angle
-- **Hidden Pattern Insight** — Something about yourself you might not realize (e.g., "You describe yourself as methodical, but your actions say hands-on learner")
-- **Categories & Strengths** — What you care about and what you're good at
+### 1. Personality Analysis (MentalOS)
 
-### On the Dashboard
-- **MentalOS Spectrum** — Learning, Decision, Novelty, Risk (each 0-100)
-- **AI-Era Playbook** — Personalized advice:
-  - **Leverage** — Your style's advantage in the AI era
-  - **Watch out** — Your blind spot
-  - **Next move** — Specific action based on your learning x risk combo
-- **Tool Recommendations** — From the Bloom skill catalog, scored and matched to your profile
-- **Shareable Link** — `bloomprotocol.ai/agents/{id}`
+Reads your USER.md and conversation history to map your builder personality:
+
+- **5 Types**: Visionary, Explorer, Cultivator, Optimizer, Innovator
+- **4 Spectrums**: Learning (Try First ↔ Study First), Decision (Gut ↔ Analytical), Novelty (Early Adopter ↔ Proven First), Risk (All In ↔ Measured)
+- **Hidden Patterns**: 6 detectors surface insights you might not see yourself
+- **AI-Era Playbook**: Personalized leverage, blind spots, and next moves
+
+```
+/bloom
+```
+
+~60 seconds. No surveys. No auth.
+
+### 2. Use Case Discovery
+
+Intent-driven skill browsing. You say what you want to accomplish; Bloom matches you to curated use cases — each a tested combination of skills.
+
+- Personality-aware ranking (novelty seekers → new use cases, risk-averse → skip DeFi)
+- Keyword frequency threshold (≥ 3 mentions) filters noise
+- Each use case comes with skill requirements and verification status
+
+```
+"find use cases for me"
+```
+
+### 3. Verify Configuration & Claim SBT
+
+Scans your installed skills (`~/.openclaw/skills/`) and verifies your setup against use case requirements.
+
+- Match percentage + missing capabilities
+- Claim flow: verified config → mint SBT (on-chain proof)
+- No wallet? Fallback to web link at bloomprotocol.ai
+- SBT = soulbound token proving your verified configuration
+
+```
+"verify my config"
+"claim my SBT"
+```
+
+### 4. Usage Metrics (Opt-in)
+
+Anonymized reporting to improve recommendations for everyone.
+
+- Reports only: skill name + usage frequency
+- No conversation content. No personal data.
+- **Opt-in only** — never sends data without your explicit consent
+
+---
+
+## Quick Start
+
+### OpenClaw
+
+```bash
+clawhub install bloom-discovery
+/bloom
+```
+
+### Developers
+
+```bash
+git clone https://github.com/bloomprotocol/bloom-discovery-skill.git
+cd bloom-identity-skill
+npm install
+cp .env.example .env
+
+# Run from session file
+npx tsx scripts/run-from-session.ts \
+  ~/.openclaw/agents/main/sessions/<SessionId>.jsonl \
+  <userId>
+```
 
 ---
 
@@ -54,66 +112,28 @@ That's it. ~3 seconds.
 
 | Type | Style |
 |------|-------|
-| 💜 **The Visionary** | High conviction + high intuition — backs bold ideas early |
-| 💚 **The Explorer** | Low conviction + high intuition — experiments widely |
-| 🩵 **The Cultivator** | High contribution — builds communities and shares knowledge |
-| 🧡 **The Optimizer** | High conviction + low intuition — doubles down on what works |
-| 💙 **The Innovator** | Low conviction + low intuition — spots patterns others miss |
-
-## 6 Hidden Pattern Detectors
-
-Bloom surfaces insights you might not see yourself, in priority order:
-
-1. **Layer Mismatch** — Your words and actions disagree (e.g., you say "research" but you actually ship first)
-2. **Spectrum Extreme** — Any spectrum score < 15 or > 85
-3. **Episode Dominance** — One behavioral pattern dominates your story (e.g., 8 out of 10 episodes are pivots)
-4. **Stealth Contributor** — High community contribution without the Cultivator label
-5. **Strength Synergy** — Rare strength combos (Builder + Designer, Analyst + Writer, etc.)
-6. **Boundary Dweller** — Sitting right at a personality threshold (±4 points)
+| **The Visionary** | High conviction + high intuition — backs bold ideas early |
+| **The Explorer** | Low conviction + high intuition — experiments widely |
+| **The Cultivator** | High contribution — builds communities and shares knowledge |
+| **The Optimizer** | High conviction + low intuition — doubles down on what works |
+| **The Innovator** | Low conviction + low intuition — spots patterns others miss |
 
 ---
 
-## How It Works
+## Security & Privacy
 
-1. **Collect signals** — USER.md (primary) + conversation history (~120 messages) + optional feedback
-2. **Build personality profile** — 4 spectrums + personality type + strengths + categories
-3. **Detect hidden pattern** — 6 detectors run in priority order, first match wins
-4. **Generate AI playbook** — Leverage / watch-out / next-move based on spectrum combos
-5. **Recommend tools** — Match profile against the Bloom skill catalog (scored by category, personality boost, and community backing)
-6. **Create dashboard** — Shareable card at `bloomprotocol.ai/agents/{id}`
+✅ **Local analysis** — Conversation text analyzed on your machine, never uploaded
+✅ **Local Differential Privacy (ε=1.0)** — Spectrum scores noised via Laplace mechanism
+✅ **SHA-256 fingerprint** — Conversation hashed locally; only irreversible hash stored
+✅ **Minimal transmission** — Server receives personality type + approximate scores only
+✅ **Read-only** — Never writes or modifies your files
+✅ **Opt-in metrics** — Usage data never sent without consent
+✅ **Open source** — Audit the algorithm yourself
 
----
-
-## Quick Start
-
-### OpenClaw Users
-
-```bash
-/bloom
-```
-
-### Developers
-
-```bash
-git clone https://github.com/bloomprotocol/bloom-discovery-skill.git
-cd bloom-discovery-skill
-npm install
-cp .env.example .env
-
-# Run from session file
-npx tsx scripts/run-from-session.ts \
-  ~/.openclaw/agents/main/sessions/<SessionId>.jsonl \
-  <userId>
-
-# Or pipe conversation text
-echo "your conversation" | npx tsx scripts/run-from-context.ts --user-id <userId>
-```
-
-### ClawHub
-
-```bash
-clawhub install bloom-discovery
-```
+❌ Raw conversation text **never** sent to any server
+❌ Wallet private keys **never** transmitted
+❌ No PII collection
+❌ No background data collection
 
 ---
 
@@ -122,23 +142,41 @@ clawhub install bloom-discovery
 ```bash
 # Required
 JWT_SECRET=your_secret_key_here
-DASHBOARD_URL=https://bloomprotocol.ai
 
-# Optional (agent wallet)
-CDP_API_KEY_ID=your_coinbase_key
-CDP_API_KEY_SECRET=your_coinbase_secret
+# Recommended
+BLOOM_API_URL=https://api.bloomprotocol.ai
+DASHBOARD_URL=https://bloomprotocol.ai
 NETWORK=base-mainnet
 ```
 
+See [.env.example](.env.example) for all options.
+
 ---
 
-## Privacy
+## Architecture
 
-- Conversation analyzed locally — raw text never uploaded
-- USER.md read locally — only analysis results sent to API
-- No wallet transaction scraping
-- No social auth required
-- Open source — audit the algorithm yourself
+```
+Conversation + USER.md
+        │
+        ▼
+  ┌─────────────┐
+  │  Personality │ ← Local analysis (LDP ε=1.0)
+  │  Analyzer    │
+  └──────┬──────┘
+         │
+    ┌────┴────┐
+    ▼         ▼
+┌────────┐ ┌────────────┐
+│Use Case│ │Skill Recomm.│
+│Matcher │ │  Pipeline   │
+└───┬────┘ └──────┬─────┘
+    │              │
+    ▼              ▼
+┌────────┐  ┌───────────┐
+│Verify  │  │ Dashboard │
+│& Claim │  │   Card    │
+└────────┘  └───────────┘
+```
 
 ---
 
@@ -148,11 +186,12 @@ NETWORK=base-mainnet
 - **ClawHub**: [clawhub.ai/unicornbloom/bloom-discovery](https://clawhub.ai/unicornbloom/bloom-discovery)
 - **Source**: [github.com/bloomprotocol/bloom-discovery-skill](https://github.com/bloomprotocol/bloom-discovery-skill)
 - **Dashboard**: [bloomprotocol.ai/agents](https://bloomprotocol.ai/agents)
+- **Docs**: [bloomprotocol.ai/docs](https://bloomprotocol.ai/docs)
 
 ---
 
-**Built by [Bloom Protocol](https://bloomprotocol.ai) 🌸**
+**Built by [Bloom Protocol](https://bloomprotocol.ai)**
 
-*For indie devs, vibe coders, and AI builders who want to understand themselves and find the right tools.*
+*Agent-native intent economy curation platform.*
 
 *Built with [@openclaw](https://openclaw.ai), [@coinbase](https://www.coinbase.com/cloud), and [@base](https://base.org)*

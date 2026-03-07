@@ -1,53 +1,61 @@
 ---
 name: bloom
 description: >
-  Zero questions asked. Reads your conversation memory in 60 seconds
-  and maps your MentalOS — builder personality, blind spots, and
-  matched tools — ready to screenshot and share.
+  Agent-native discovery skill for the intent economy.
+  Analyzes your MentalOS, matches use cases, verifies config,
+  claims SBT proof, and reports opt-in usage metrics —
+  all privacy-first with local analysis.
 user-invocable: true
 command-dispatch: tool
 metadata: {"requires": {"bins": ["node", "npx"], "env": ["OPENCLAW_USER_ID"]}, "optional_env": ["JWT_SECRET", "BLOOM_API_URL", "DASHBOARD_URL", "NETWORK"]}
 permissions:
   - read:conversations  # Reads last ~120 messages for LOCAL analysis only
+  - read:filesystem     # Reads ~/.openclaw/skills/ for use case verification
   - network:external    # Sends analysis results (NOT raw text) to Bloom API
 ---
 
 # Bloom Discovery
 
-**Discover your builder personality and get personalized tool recommendations.**
+**Don't browse 13,000 skills. Browse use cases.**
 
-## Trust & Privacy
-
-- **Local analysis** — Your conversation is analyzed entirely on your machine.
-  Raw messages never leave your device.
-- **Read-only** — Reads session files and USER.md but never writes or modifies them.
-- **Minimal transmission** — Only derived results (personality type, categories,
-  approximate scores) are sent to Bloom API. Raw conversation text, personal
-  identifiable information, and wallet keys are never transmitted.
-- **User-initiated** — Only runs when you explicitly invoke `/bloom`.
-- **Open source** — Full source code at
-  [github.com/bloomprotocol/bloom-discovery-skill](https://github.com/bloomprotocol/bloom-discovery-skill)
+Your agent analyzes how you work, matches you to curated use cases, verifies your configuration, and lets you claim on-chain proof.
 
 ## What You Get
 
-Your personalized Bloom Identity Card reveals:
-
+### Personality Analysis (MentalOS)
 - **Personality Type** — Visionary, Explorer, Cultivator, Optimizer, or Innovator
 - **Custom Tagline** — A one-liner that captures your style
 - **MentalOS Spectrum** — Learning, Decision, Novelty, Risk (each 0-100)
 - **Hidden Pattern Insight** — Something about yourself you might not realize
 - **AI-Era Playbook** — Your leverage, blind spot, and next move
 - **Tool Recommendations** — Matched from the Bloom skill catalog
-- **Shareable Dashboard** — Your card at bloomprotocol.ai
+
+### Use Case Discovery
+- Describe your intent → get matched use cases (curated skill combinations)
+- Personality-aware ranking (novelty seekers get new use cases, risk-averse skip DeFi)
+- Each use case = tested combination of skills that solve a real problem
+
+### Verify & Claim SBT
+- Scans `~/.openclaw/skills/` to verify you have the right setup for a use case
+- Shows match percentage and missing capabilities
+- Claim SBT = on-chain proof of your verified configuration
+- No wallet? Get a web link instead
+
+### Usage Metrics (Opt-in)
+- Anonymized usage reporting: skill name + frequency only
+- Improves recommendations for everyone
+- **Never sends data without your explicit consent**
 
 ## How It Works
 
 Just type `/bloom` in your chat.
 
 Bloom reads your USER.md and recent conversations to:
-- **Map your MentalOS** — your operating style across 4 dimensions (Learning, Decision, Novelty, Risk)
+- **Map your MentalOS** — your operating style across 4 dimensions
 - **Find your blind spots** — patterns you might not notice yourself
-- **Recommend matched tools** — personalized picks from the Bloom skill catalog
+- **Match use cases** — intent-driven skill combinations
+- **Verify your setup** — check if you have what you need
+- **Recommend matched tools** — personalized picks from the Bloom catalog
 
 No surveys. No complex setup. No auth flows.
 
@@ -55,7 +63,7 @@ No surveys. No complex setup. No auth flows.
 
 1. **Chat a little first** (at least 3 messages) so Bloom has context.
 2. Type **`/bloom`**.
-3. You'll get your **Identity Card + tool recommendations + dashboard link**.
+3. You'll get your **Identity Card + use case matches + dashboard link**.
 4. If you're brand new, Bloom will ask **4 quick questions** and generate your card immediately.
 
 ## Activation
@@ -66,91 +74,41 @@ Say any of these:
 - "what's my builder type"
 - "discover my personality"
 - "create my bloom card"
-- "who am I as a builder"
+- "find use cases for me"
+- "verify my config"
+- "claim my SBT"
 
-## Self-Growing Recommendations
+## Security & Privacy
 
-Your agent doesn't just recommend once — it **learns and improves** over time.
+✅ Local analysis — conversation text never leaves your device
+✅ Local Differential Privacy (ε=1.0) — spectrum scores noised before transmission
+✅ SHA-256 fingerprint — only irreversible hash stored for dedup
+✅ Minimal transmission — server sees personality type + approximate scores only
+✅ Read-only — never writes or modifies your files
+✅ User-initiated — only runs when you invoke it
+✅ Opt-in metrics — usage data never sent without consent
+✅ Open source — [github.com/bloomprotocol/bloom-discovery-skill](https://github.com/bloomprotocol/bloom-discovery-skill)
 
-1. **USER.md Integration** — If you have a `~/.config/claude/USER.md`, Bloom reads your declared role, tech stack, and interests as the primary identity signal. No USER.md? No problem — falls back to conversation-only analysis.
-
-2. **Feedback Loop** — As you interact with recommendations (click, save, or dismiss), Bloom adjusts future suggestions.
-
-3. **TTL Refresh** — Recommendations refresh every 7 days, incorporating your latest interactions and newly published skills from the Bloom catalog.
-
-**Bloom recommends skills but never installs them automatically.** You always decide what to install.
+❌ Raw text never sent to any server
+❌ Wallet keys never transmitted
+❌ No PII collection
+❌ No background data collection
 
 ## Permissions & Data Flow
 
-This skill requires the following permissions:
-
 **Read Conversations** — Reads your last ~120 messages to detect interests and personality patterns. **All conversation text is processed locally on your machine.** Raw message content is never sent to any external server.
 
-**External Network** — After local analysis, sends **only these derived results** to Bloom Protocol API (`api.bloomprotocol.ai`):
+**Read Filesystem** — Reads `~/.openclaw/skills/` to verify installed skills against use case requirements. Directory listing only — no file content is read or transmitted.
+
+**External Network** — After local analysis, sends **only derived results** to Bloom Protocol API (`api.bloomprotocol.ai`):
 - Personality type (e.g. "The Visionary")
 - MentalOS spectrum scores (4 numbers, 0-100)
 - Interest categories (e.g. "AI Tools", "Productivity")
-- Generated tagline and description (written by the analyzer, not copied from your messages)
-- Tool recommendations matched from the Bloom skill catalog
+- Generated tagline and description
+- Use case match results
+- Opt-in usage metrics (skill name + frequency only)
 
-## Privacy Architecture
-
-- **Local Differential Privacy (ε=1.0)** — MentalOS spectrum scores are noised via Laplace
-  mechanism before transmission. Your exact scores stay on your device; the server receives
-  only approximate values. (See: `src/utils/privacy.ts`)
-- **SHA-256 Conversation Fingerprint** — Your conversation is hashed locally. Only the
-  irreversible fingerprint is stored for deduplication — never the content.
-- **Minimal Data Design** — Our server sees your personality type and approximate scores,
-  never your raw messages or personal descriptions.
-
-**Connections:** `api.bloomprotocol.ai` (identity storage + catalog) · `bloomprotocol.ai` (dashboard, read-only)
-
-Verify no raw text is sent: inspect `src/bloom-identity-skill-v2.ts` (search for `/x402/agent-save`).
-
-## Example Output
-
-```
-═══════════════════════════════════════════════════════
-  Your Bloom Identity Card is ready!
-═══════════════════════════════════════════════════════
-
-VIEW YOUR IDENTITY CARD:
-   https://bloomprotocol.ai/agents/27811541
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-The Visionary
-"First to try new AI tools"
-
-You jump on cutting-edge tools before they're mainstream. Your
-conviction is your edge, and you see potential where others see
-hype. AI agents are where you spot the next big thing.
-
-Categories: AI Tools · Productivity · Automation
-Interests: AI Agents · No-code Tools · Creative AI
-
-MentalOS:
-   Learning:  Try First ████████░░ Study First
-   Decision:  Gut ███░░░░░░░ Analytical
-   Novelty:   Early Adopter ███████░░░ Proven First
-   Risk:      All In ██████░░░░ Measured
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Top 5 Recommended Tools:
-
-1. agent-frameworks (94% match) · by @builder_alice
-   Build AI agents with tool use and memory
-
-2. no-code-automation (89% match) · by @automation_guru
-   Connect your apps without writing code
-
-...
-
-═══════════════════════════════════════════════════════
-
-Bloom Identity · Built for indie builders
-```
+**Connections:** `api.bloomprotocol.ai` (identity + catalog + metrics) · `bloomprotocol.ai` (dashboard, read-only)
 
 ## Installation
 
@@ -158,27 +116,14 @@ Bloom Identity · Built for indie builders
 clawhub install bloom-discovery
 ```
 
-On first run, clones source from [github.com/bloomprotocol/bloom-discovery-skill](https://github.com/bloomprotocol/bloom-discovery-skill) into `~/.openclaw/workspace/`, runs `npm install`, and creates a `.env` with auto-generated JWT secret. Delete `~/.openclaw/workspace/bloom-identity-skill/` to fully uninstall.
-
-## Troubleshooting
-
-**"Insufficient conversation data"**
-→ Need at least 3 messages. Keep chatting about tools you're interested in!
-
-**"Command not found"**
-→ Verify `bloom-discovery-skill` is in `~/.openclaw/workspace/` and run `npm install`
-
-**No tool recommendations**
-→ Tool recommendations depend on API availability. Your identity card still works!
-
 ## Technical Details
 
-- **Version**: 3.1.0
-- **Privacy**: LDP ε=1.0 + SHA-256 fingerprint + E2EE (planned)
+- **Version**: 4.0.0
+- **Privacy**: LDP ε=1.0 + SHA-256 fingerprint
 - **Analysis Engine**: MentalOS spectrum (4 dimensions) + category mapping
 - **Primary Signal**: Conversation memory (~120 messages) + USER.md
-- **Processing Time**: ~60 seconds
-- **Output**: Personality card + tool recommendations + dashboard URL
+- **Processing Time**: ~60 seconds (personality) + ~5 seconds (use case matching)
+- **Output**: Personality card + use case matches + tool recommendations + dashboard URL
 
 ---
 

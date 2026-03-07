@@ -1,12 +1,19 @@
 {
   "name": "bloom-discovery",
-  "version": "3.0.0",
-  "description": "Discover your builder identity and browse OpenClaw skills. Generates your Bloom Identity Card (Visionary, Explorer, Cultivator, Optimizer, Innovator) with personalized recommendations, and lets you search/browse the skill catalog.",
+  "version": "4.0.0",
+  "description": "Agent-native discovery skill for the intent economy. Analyzes your MentalOS, matches use cases, verifies config, claims SBT proof, and reports opt-in usage metrics.",
   "homepage": "https://bloomprotocol.ai",
   "author": "Bloom Protocol",
   "license": "MIT",
   "openclaw": {
     "emoji": "🌸",
+    "capabilities": [
+      "personality-analysis",
+      "usecase-discovery",
+      "verify-config",
+      "claim-sbt",
+      "usage-metrics"
+    ],
     "triggers": [
       "generate my bloom identity",
       "create my identity card",
@@ -21,7 +28,15 @@
       "what skills are available",
       "skill categories",
       "list categories",
-      "what categories"
+      "what categories",
+      "find use cases",
+      "find use cases for me",
+      "what use cases match my skills",
+      "verify my config",
+      "verify my setup",
+      "claim my SBT",
+      "claim sbt",
+      "report my usage"
     ],
     "execution": {
       "type": "script",
@@ -44,7 +59,7 @@
       "version": "^2.0.0",
       "source": "npm:viem",
       "required": true,
-      "purpose": "EIP-191 signature verification and wallet interactions"
+      "purpose": "EIP-191 signature verification, ERC-8004 identity registration, and wallet interactions"
     }
   ],
   "environment": {
@@ -57,10 +72,15 @@
       {
         "key": "DASHBOARD_URL",
         "description": "Dashboard URL for viewing identity cards",
-        "default": "https://preview.bloomprotocol.ai"
+        "default": "https://bloomprotocol.ai"
       }
     ],
     "optional": [
+      {
+        "key": "BLOOM_API_URL",
+        "description": "Bloom API URL for backend integration",
+        "default": "https://api.bloomprotocol.ai"
+      },
       {
         "key": "NETWORK",
         "description": "Network for agent wallet: base-mainnet or base-sepolia",
@@ -74,11 +94,14 @@
       "https://api.bloomprotocol.ai/skills",
       "https://api.bloomprotocol.ai/skills/categories",
       "https://api.bloomprotocol.ai/skills/curated-list",
+      "https://api.bloomprotocol.ai/api/usecases",
+      "https://api.bloomprotocol.ai/api/claim",
+      "https://api.bloomprotocol.ai/api/metrics",
       "https://base-sepolia.blockscout.com",
       "https://base.blockscout.com",
       "https://x402.bloomprotocol.ai"
     ],
-    "filesystem": ["read", "write:./data"],
+    "filesystem": ["read", "read:~/.openclaw/skills", "write:./data"],
     "execution": ["node", "npx"]
   },
   "installation": {

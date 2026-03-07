@@ -1,6 +1,6 @@
 {
   "name": "bloom-identity-skill",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "OpenClaw skill for generating Bloom Identity Cards",
   "main": "src/index.ts",
   "exports": {
