@@ -469,6 +469,22 @@ export class BloomIdentitySkillV2 {
   }
 }
 
+// ── Tribe mapping ───────────────────────────────────────────────────
+
+/** Map identity categories to the best-fit tribe. */
+function getRecommendedTribe(categories: string[]): { id: string; name: string; tagline: string } {
+  const catSet = new Set(categories.map(c => c.toLowerCase()));
+
+  if (['marketing', 'design', 'productivity'].some(c => catSet.has(c))) {
+    return { id: 'grow', name: 'Grow', tagline: 'Content, SEO, GEO, distribution — being found, getting chosen' };
+  }
+  if (['finance', 'crypto', 'prediction market'].some(c => catSet.has(c))) {
+    return { id: 'raise', name: 'Raise', tagline: 'Agent-powered project evaluation and community signal' };
+  }
+  // Default to Build for dev/agent categories
+  return { id: 'build', name: 'Build', tagline: 'From zero to production agent — setup, skills, workflows' };
+}
+
 // ── Discovery mode helpers ──────────────────────────────────────────
 
 /** Detect which mode the user wants based on their trigger / message text. */
@@ -741,6 +757,13 @@ function formatSuccessMessage(result: any): string {
       }
     }
   }
+
+  // 8. Tribe recommendation
+  const tribe = getRecommendedTribe(identityData.mainCategories);
+  msg += `\n\n🏛 **Your tribe: ${tribe.name}**`;
+  msg += `\n${tribe.tagline}`;
+  msg += `\n→ Join: https://bloomprotocol.ai/discover/${tribe.id}`;
+  msg += `\n→ \`clawhub install bloom-tribe-skill\``;
 
   return msg;
 }
