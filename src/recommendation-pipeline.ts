@@ -397,10 +397,8 @@ function findBestCategory(skill: SkillRecommendation, mainCategories: string[]):
     }
   }
 
-  if (bestScore === 0 && mainCategories.length > 0) {
-    bestCat = mainCategories[0];
-  }
-
+  // Don't force-assign to first category when there's no match —
+  // return null so the skill is skipped instead of polluting buckets.
   return bestCat;
 }
 
