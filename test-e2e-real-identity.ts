@@ -28,9 +28,8 @@ async function run() {
 
   const skill = new BloomIdentitySkillV2();
 
-  // Skip API save by using a fake userId — we just want to see the identity + recs
-  // Set BLOOM_API_URL to a dummy so the save step fails gracefully
-  process.env.BLOOM_API_URL = 'http://localhost:9999';
+  // Point to production API for full E2E (save + recommendations)
+  process.env.BLOOM_API_URL = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
 
   const start = Date.now();
   const result = await skill.execute('e2e-test-user', {
@@ -73,8 +72,8 @@ async function run() {
     console.log(`\n🎨 Taste Spectrums:`);
     console.log(`   Learning:  ${ts.learning}/100 (${ts.learning < 40 ? 'try-first' : ts.learning > 60 ? 'study-first' : 'balanced'})`);
     console.log(`   Decision:  ${ts.decision}/100 (${ts.decision < 40 ? 'gut' : ts.decision > 60 ? 'deliberate' : 'balanced'})`);
-    console.log(`   Novelty:   ${ts.novelty}/100 (${ts.novelty < 40 ? 'early-adopter' : ts.novelty > 60 ? 'wait-and-see' : 'balanced'})`);
-    console.log(`   Risk:      ${ts.risk}/100 (${ts.risk < 40 ? 'bold' : ts.risk > 60 ? 'cautious' : 'balanced'})`);
+    console.log(`   Novelty:   ${ts.novelty}/100 (${ts.novelty < 40 ? 'pioneer' : ts.novelty > 60 ? 'pragmatist' : 'balanced'})`);
+    console.log(`   Risk:      ${ts.risk}/100 (${ts.risk < 40 ? 'all-in' : ts.risk > 60 ? 'diversified' : 'balanced'})`);
   }
 
   if (id.strengths?.length) {

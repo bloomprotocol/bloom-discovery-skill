@@ -2,17 +2,23 @@
  * Taste Spectrum Dimensions
  *
  * 4 continuous spectrums (0-100) that capture HOW users operate:
- *   learning:  try-first (0) <-> study-first (100)
- *   decision:  gut (0) <-> deliberate (100)
- *   novelty:   early-adopter (0) <-> wait-and-see (100)
- *   risk:      bold (0) <-> cautious (100)
+ *   learning:  try-first (0) <-> study-first (100)   — how you learn
+ *   decision:  gut (0) <-> deliberate (100)           — how you decide
+ *   novelty:   pioneer (0) <-> pragmatist (100)       — when you adopt (timing)
+ *   risk:      all-in (0) <-> diversified (100)       — how you commit (concentration)
+ *
+ * novelty vs risk distinction:
+ *   novelty = TIMING — do you try new things early or wait for proof?
+ *   risk    = CONCENTRATION — do you go deep on one bet or spread across many?
+ *   A pioneer who diversifies = tries everything new, small bets each.
+ *   A pragmatist who's all-in = waits for proven, then goes hard.
  */
 
 export interface TasteSpectrums {
   learning: number;  // 0 = try-first, 100 = study-first
   decision: number;  // 0 = gut, 100 = deliberate
-  novelty: number;   // 0 = early-adopter, 100 = wait-and-see
-  risk: number;      // 0 = bold, 100 = cautious
+  novelty: number;   // 0 = pioneer, 100 = pragmatist
+  risk: number;      // 0 = all-in, 100 = diversified
 }
 
 export interface DetectedStrengths {
@@ -74,33 +80,35 @@ export const DECISION_DELIBERATE_KEYWORDS = [
   'looked into', 'considered', 'assessed', 'measured',
 ];
 
+// Novelty = TIMING — when you adopt (early vs late), not how much you bet
 export const NOVELTY_EARLY_KEYWORDS = [
   'first', 'early', 'beta', 'alpha', 'bleeding edge',
   'day one', 'before anyone', 'pre-launch', 'pioneer', 'cutting edge',
   'cutting-edge', 'emerging', 'exploring', 'frontier', 'future',
-  'autonomous', 'agentic', 'degen', 'experimental', 'novel',
+  'autonomous', 'agentic', 'experimental', 'novel',
   'next-gen', 'new approach', 'latest',
 ];
 
 export const NOVELTY_WAIT_KEYWORDS = [
   'wait', 'proven', 'stable', 'mature', 'established',
-  'track record', 'safe', 'battle-tested', 'mainstream', 'after others',
+  'track record', 'battle-tested', 'mainstream', 'after others',
   'well-known', 'widely adopted', 'production-ready', 'industry standard',
   'tried and true', 'reliable', 'long-running',
 ];
 
+// Risk = CONCENTRATION — how you commit (all-in vs diversified), not timing
 export const RISK_BOLD_KEYWORDS = [
-  'yolo', 'all in', 'bet big', 'bold', 'aggressive',
-  'risk', 'moon', 'gamble', 'fearless', 'ambitious',
-  'degen', 'ape', 'leverage', 'high-risk', 'moonshot',
-  'disrupt', 'radical', 'unconventional', 'bet on',
+  'all in', 'bet big', 'double down', 'go deep', 'commit fully',
+  'yolo', 'moon', 'ape', 'degen', 'leverage', 'high-risk', 'moonshot',
+  'bet on', 'one thing', 'focus', 'specialize', 'single bet',
+  'concentrate', 'maximize', 'conviction bet',
 ];
 
 export const RISK_CAUTIOUS_KEYWORDS = [
-  'careful', 'conservative', 'hedge', 'safe', 'diversify',
-  'cautious', 'slow', 'measured', 'steady', 'prudent',
-  'low-risk', 'balanced portfolio', 'risk-adjusted', 'sustainable',
-  'gradual', 'incremental', 'step by step',
+  'diversify', 'spread', 'hedge', 'balanced portfolio', 'mix of',
+  'multiple', 'several options', 'variety', 'optionality',
+  'risk-adjusted', 'don\'t put all', 'basket',
+  'gradual', 'incremental', 'step by step', 'broad',
 ];
 
 // ─── Episodic memory patterns ────────────────────────────────────────────

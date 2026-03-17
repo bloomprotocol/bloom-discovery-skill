@@ -662,26 +662,28 @@ export class PersonalityAnalyzer {
       }
     }
 
-    // --- Sentence 3: Uncertainty attitude (novelty × risk quadrant) ---
+    // --- Sentence 3: Timing × Concentration quadrant (novelty × risk) ---
+    // novelty = when you adopt (pioneer vs pragmatist)
+    // risk = how you commit (all-in vs diversified)
     let sentence3: string;
     const noveltyCenter = spectrums.novelty >= 45 && spectrums.novelty <= 55;
     const riskCenter = spectrums.risk >= 45 && spectrums.risk <= 55;
 
     if (noveltyCenter && riskCenter) {
       // True Center
-      sentence3 = "You read uncertainty case by case — neither reflexively early nor habitually cautious, which lets you match your response to the actual stakes.";
+      sentence3 = "You adapt your timing and commitment to each situation — no default setting, just pattern-matching the stakes in real time.";
     } else if (spectrums.novelty < 50 && spectrums.risk < 50) {
-      // Pioneer: early adopter + bold
-      sentence3 = "Uncertainty is where you thrive — you adopt early and bet boldly, comfortable being wrong once to be right first.";
+      // Pioneer + All-in: tries new things early AND goes deep
+      sentence3 = "You adopt early and go deep — when something catches your eye, you don't dabble, you commit before the crowd even notices.";
     } else if (spectrums.novelty < 50 && spectrums.risk >= 50) {
-      // Calculated Early Mover: early adopter + cautious
-      sentence3 = "You show up early but never reckless — first to explore, but you size up the downside before committing.";
+      // Pioneer + Diversified: tries new things early but spreads bets
+      sentence3 = "You show up early to everything, but you spread your bets — first to explore five new tools, keeping options open until one clearly wins.";
     } else if (spectrums.novelty >= 50 && spectrums.risk < 50) {
-      // Contrarian Patient: wait + bold
-      sentence3 = "You wait for the noise to settle, then move decisively — a patient entry paired with bold conviction once you see the signal.";
+      // Pragmatist + All-in: waits for proof, then goes hard
+      sentence3 = "You wait for the noise to settle, then go all-in — a patient entry paired with total conviction once you see the signal.";
     } else {
-      // Steady Hand: wait + cautious
-      sentence3 = "You let others beta-test the hype and absorb the risk — when you finally move, it's because the evidence left no doubt.";
+      // Pragmatist + Diversified: waits AND spreads
+      sentence3 = "You let others beta-test the hype while you maintain a diversified portfolio — when you finally add something, it's earned its place among many.";
     }
 
     // --- Sentence 4: AI age positioning (PersonalityType + strength) ---
@@ -743,8 +745,8 @@ export class PersonalityAnalyzer {
     const spectrumLabels: Record<string, [string, string]> = {
       learning: ['hands-on learner', 'methodical researcher'],
       decision: ['gut-instinct decider', 'deliberate analyst'],
-      novelty: ['early adopter', 'wait-and-see observer'],
-      risk: ['bold risk-taker', 'cautious planner'],
+      novelty: ['pioneer', 'pragmatist'],
+      risk: ['all-in concentrator', 'diversified strategist'],
     };
 
     // 1. Layer Mismatch — keyword vs episode spectrums disagree by >15 points
@@ -788,7 +790,7 @@ export class PersonalityAnalyzer {
           bold: 'You repeatedly take bold leaps — calculated risk is your comfort zone',
           study: 'You invest deeply in understanding before acting — knowledge is your foundation',
           'hands-on': "You learn by doing, again and again — theory can't keep up with your prototyping",
-          'early-adopter': "You're always first in line — your curiosity outpaces caution",
+          'early-adopter': "You're always first in line — your timing instinct outpaces the mainstream",
           decision: 'You make deliberate choices — every move is considered',
           cautious: 'You play the long game — patience and protection are your strategy',
           'wait-and-see': 'You watch, wait, and move only when the timing is right — patience is your strategy',
@@ -928,11 +930,18 @@ export class PersonalityAnalyzer {
       nextMove = typeNextMoves[personalityType] || typeNextMoves[PersonalityType.THE_INNOVATOR];
     }
 
-    // Novelty-based modifier (early adopter vs wait-and-see)
+    // Novelty-based modifier (pioneer vs pragmatist)
     if (spectrums.novelty < 20) {
       nextMove += ' You\'re wired to move first — trust that instinct, the early-mover advantage in AI is real.';
     } else if (spectrums.novelty > 80) {
       nextMove += ' No rush — the AI tools that survive the next 6 months are the ones worth your time.';
+    }
+
+    // Risk-based modifier (all-in vs diversified)
+    if (spectrums.risk < 20) {
+      nextMove += ' When you find the right tool, go deep — your focus is your edge.';
+    } else if (spectrums.risk > 80) {
+      nextMove += ' Keep your toolkit broad — optionality is your superpower in a fast-moving space.';
     }
 
     return { leverage, watchOut, nextMove };

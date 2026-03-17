@@ -229,11 +229,20 @@ async function refreshRecommendationsInner(
           ? (s.stars >= 1000 ? `${(s.stars / 1000).toFixed(1)}k ★` : `${s.stars} ★`)
           : 'new';
 
-      const reason = matchedCategory
-        ? `Because you're into ${matchedCategory} — ${engagementDisplay}`
-        : matchedKeywords.length > 0
-          ? `Fits your ${typeName} style — ${engagementDisplay}`
-          : `Fits your ${typeName} profile — ${engagementDisplay}`;
+      // Build a varied, informative reason — avoid repeating category (shown in group header)
+      const rawDesc = (s.description || '').split(/[.!?—]/)[0].trim();
+      // Truncate at word boundary to avoid mid-word cuts
+      const shortDesc = rawDesc.length > 65
+        ? rawDesc.slice(0, 65).replace(/\s+\S*$/, '')
+        : rawDesc;
+      let reason: string;
+      if (matchedKeywords.length >= 2) {
+        reason = `Matches: ${matchedKeywords.slice(0, 3).join(', ')} — ${engagementDisplay}`;
+      } else if (shortDesc && shortDesc.length > 15) {
+        reason = `${shortDesc} — ${engagementDisplay}`;
+      } else {
+        reason = engagementDisplay;
+      }
 
       return {
         skillId: s.id,
