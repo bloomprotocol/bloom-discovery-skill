@@ -60,7 +60,7 @@ async function run() {
     ['url', !!first.url],
     ['matchScore (number)', typeof first.matchScore === 'number'],
     ['categories (array)', Array.isArray(first.categories)],
-    ['source (ClaudeCode|ClawHub)', ['ClaudeCode', 'ClawHub'].includes(first.source)],
+    ['source (catalog|ClaudeCode|ClawHub)', ['catalog', 'ClaudeCode', 'ClawHub'].includes(first.source)],
     ['categoryGroup', !!first.categoryGroup],
     ['reason', !!first.reason],
     ['per-category <= 5', Object.values(groups).every(g => g.length <= 5)],

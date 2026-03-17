@@ -67,6 +67,21 @@ async function run() {
     console.log(`\nRegister URL: ${result.actions.save.registerUrl}`);
   }
 
+  // Check registration fields (merged agent-save + register)
+  console.log('\n=== REGISTRATION VALIDATION ===\n');
+  const reg = result.registration;
+  if (reg) {
+    console.log(`agentId: ${reg.agentId}`);
+    console.log(`apiKey: ${reg.apiKey}`);
+    console.log(`assignedTribe: ${reg.assignedTribe}`);
+    console.log(`isNew: ${reg.isNew}`);
+    const regValid = reg.apiKey?.startsWith('bk_') && ['build', 'raise', 'grow'].includes(reg.assignedTribe);
+    console.log(`Registration valid: ${regValid ? '✅' : '❌'}`);
+    if (!regValid) process.exit(1);
+  } else {
+    console.log('⚠️  No registration data returned (backend may not support platform field yet)');
+  }
+
   process.exit(isValid ? 0 : 1);
 }
 

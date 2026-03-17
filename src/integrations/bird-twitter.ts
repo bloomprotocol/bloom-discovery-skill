@@ -4,10 +4,13 @@
  * Uses bird CLI tool to fetch real Twitter/X data
  */
 
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+// Twitter handles: 1-15 alphanumeric + underscore
+const SAFE_HANDLE = /^[a-zA-Z0-9_]{1,15}$/;
 
 export interface BirdProfile {
   bio: string;
@@ -30,11 +33,15 @@ export interface BirdFollowing {
  */
 export async function fetchTwitterProfile(handle: string): Promise<BirdProfile | null> {
   try {
-    // Remove @ if present
+    // Remove @ if present and validate
     const cleanHandle = handle.startsWith('@') ? handle.slice(1) : handle;
+    if (!SAFE_HANDLE.test(cleanHandle)) {
+      console.error(`Invalid Twitter handle: ${cleanHandle}`);
+      return null;
+    }
 
-    // Execute bird command
-    const { stdout } = await execAsync(`bird user ${cleanHandle} --with-tweets --limit 10 --json`);
+    // Execute bird command (execFile prevents shell injection)
+    const { stdout } = await execFileAsync('bird', ['user', cleanHandle, '--with-tweets', '--limit', '10', '--json']);
     const data = JSON.parse(stdout);
 
     return {
@@ -60,8 +67,12 @@ export async function fetchTwitterProfile(handle: string): Promise<BirdProfile |
 export async function fetchTwitterFollowing(handle: string, limit: number = 100): Promise<BirdFollowing | null> {
   try {
     const cleanHandle = handle.startsWith('@') ? handle.slice(1) : handle;
+    if (!SAFE_HANDLE.test(cleanHandle)) {
+      console.error(`Invalid Twitter handle: ${cleanHandle}`);
+      return null;
+    }
 
-    const { stdout } = await execAsync(`bird following ${cleanHandle} --limit ${limit} --json`);
+    const { stdout } = await execFileAsync('bird', ['following', cleanHandle, '--limit', String(limit), '--json']);
     const data = JSON.parse(stdout);
 
     const handles = (data.users || data.following || [])

@@ -131,21 +131,28 @@ export async function syncDiscoveries(
   agentUserId: number | string,
   options?: SyncDiscoveriesOptions,
 ): Promise<{ newCount: number; totalSynced: number; newEntries: DiscoveryEntry[] }> {
+  // Validate agentUserId to prevent URL path injection
+  const numericId = Number(agentUserId);
+  if (!Number.isFinite(numericId) || numericId < 0 || !Number.isInteger(numericId)) {
+    throw new Error(`Invalid agentUserId: ${agentUserId}`);
+  }
+
   const apiUrl = options?.apiUrl || process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
   const outputDir = options?.outputDir || process.cwd();
 
   const mdFilePath = path.join(outputDir, MD_FILE);
   const stateFilePath = path.join(outputDir, STATE_FILE);
 
-  console.log(`[discovery-sync] Fetching discoveries for agent ${agentUserId}...`);
+  console.log(`[discovery-sync] Fetching discoveries for agent ${numericId}...`);
 
   // 1. Fetch from backend
-  const url = `${apiUrl}/x402/agent/${agentUserId}/discoveries`;
+  const url = `${apiUrl}/x402/agent/${numericId}/discoveries`;
   const response = await fetch(url, {
     headers: {
       'User-Agent': 'Bloom-Identity-Skill',
       'Accept': 'application/json',
     },
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!response.ok) {

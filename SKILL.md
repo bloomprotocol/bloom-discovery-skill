@@ -72,7 +72,8 @@ Anonymized usage reporting to improve recommendations for everyone.
 ✅ **Local Differential Privacy (ε=1.0)** — Spectrum scores noised via Laplace mechanism before transmission
 ✅ **SHA-256 fingerprint** — Conversation hashed locally; only irreversible hash stored for dedup
 ✅ **Minimal transmission** — Server receives personality type + approximate scores only
-✅ **Read-only** — Reads session files and USER.md but never writes or modifies them
+✅ **Minimal writes** — Writes only `~/.bloom/agent-id.json` (returning user token, 0600 permissions) and `bloom-discoveries.md` (local sync log). Never modifies session files or USER.md
+✅ **Atomic file writes** — Uses tmp+rename pattern to prevent corruption
 ✅ **User-initiated** — Only runs when you explicitly invoke the skill
 ✅ **Opt-in metrics** — Usage data never sent without consent
 ✅ **Open source** — Full source at [github.com/bloomprotocol/bloom-discovery-skill](https://github.com/bloomprotocol/bloom-discovery-skill)

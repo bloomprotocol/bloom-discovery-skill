@@ -101,7 +101,17 @@ export class OpenClawSessionReader {
    * Read all messages from a session JSONL file
    */
   private async readSessionMessages(sessionId: string): Promise<SessionMessage[]> {
+    // Validate sessionId to prevent path traversal
+    if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
+      console.error(`Invalid session ID: ${sessionId}`);
+      return [];
+    }
     const sessionFile = path.join(this.sessionDir, `${sessionId}.jsonl`);
+    // Verify resolved path stays within sessionDir
+    if (!path.resolve(sessionFile).startsWith(path.resolve(this.sessionDir))) {
+      console.error('Path traversal detected in session ID');
+      return [];
+    }
 
     if (!fs.existsSync(sessionFile)) {
       return [];

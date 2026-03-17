@@ -8,7 +8,7 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { homedir } from 'os';
 
 export interface UserMdSignals {
@@ -28,6 +28,14 @@ const DEFAULT_USER_MD_PATH = join(homedir(), '.config', 'claude', 'USER.md');
  */
 export function parseUserMd(filePath?: string): UserMdSignals | null {
   const resolvedPath = filePath || DEFAULT_USER_MD_PATH;
+
+  // Restrict file reads to user's home directory to prevent arbitrary file access
+  const home = homedir();
+  const normalizedPath = resolve(resolvedPath);
+  if (!normalizedPath.startsWith(home)) {
+    console.error(`[user-md-parser] Path outside home directory rejected: ${resolvedPath}`);
+    return null;
+  }
 
   if (!existsSync(resolvedPath)) {
     return null;

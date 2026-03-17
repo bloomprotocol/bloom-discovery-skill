@@ -8,6 +8,9 @@
  * - Graceful degradation
  */
 
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 import { PersonalityAnalyzer } from './analyzers/personality-analyzer';
 import { EnhancedDataCollector } from './analyzers/data-collector-enhanced';
 import { ManualQAFallback, ManualAnswer } from './analyzers/manual-qa-fallback';
@@ -20,6 +23,67 @@ import { syncDiscoveries, DiscoveryEntry } from './discovery-sync';
 import { parseUserMd, UserMdSignals } from './parsers/user-md-parser';
 import { mergeSignals, MergedSignals, FeedbackData } from './analyzers/signal-merger';
 import { privatizeSpectrums, conversationFingerprint } from './utils/privacy';
+
+// ── Local identity persistence ──────────────────────────────────────
+
+const BLOOM_DIR = join(homedir(), '.bloom');
+const AGENT_ID_FILE = join(BLOOM_DIR, 'agent-id.json');
+
+interface StoredAgent {
+  agentUserId: number;
+  userId?: string;
+  savedAt?: string;
+  // Agent registration (self-registration via POST /agent/register)
+  agentId?: string;       // e.g. "agent_123456789"
+  apiKey?: string;        // e.g. "bk_123456789"
+  assignedTribe?: string; // "build" | "raise" | "grow"
+}
+
+/** Load stored identity file including userId for consistency check */
+async function loadStoredIdentityFile(): Promise<StoredAgent | null> {
+  try {
+    const data = await fs.readFile(AGENT_ID_FILE, 'utf-8');
+    const parsed = JSON.parse(data);
+    return typeof parsed.agentUserId === 'number' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist agent data locally for returning user detection (atomic write, 0o600) */
+async function saveAgentId(agentUserId: number, userId: string, extra?: Partial<StoredAgent>): Promise<void> {
+  try {
+    await fs.mkdir(BLOOM_DIR, { recursive: true, mode: 0o700 });
+    const tmpFile = `${AGENT_ID_FILE}.${process.pid}.tmp`;
+    await fs.writeFile(
+      tmpFile,
+      JSON.stringify({
+        agentUserId,
+        userId,
+        savedAt: new Date().toISOString(),
+        ...extra,
+      }),
+      { mode: 0o600 },
+    );
+    await fs.rename(tmpFile, AGENT_ID_FILE); // atomic on same filesystem
+  } catch (err) {
+    console.debug('[agent-id] Failed to save:', err instanceof Error ? err.message : err);
+  }
+}
+
+
+/** Fetch existing identity from backend by agentUserId */
+async function fetchExistingIdentity(agentUserId: number): Promise<any | null> {
+  try {
+    const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
+    const res = await fetch(`${apiBase}/x402/agent/${agentUserId}`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return body.data || null;
+  } catch {
+    return null;
+  }
+}
 
 // Re-export for backwards compatibility
 export { PersonalityType };
@@ -85,6 +149,7 @@ export class BloomIdentitySkillV2 {
       conversationText?: string; // ⭐ NEW: Direct conversation text from OpenClaw bot
       userMdPath?: string;       // Path to USER.md, default ~/.config/claude/USER.md
       feedback?: FeedbackData;   // Feedback signals from recommendation interactions
+      forceRegenerate?: boolean; // Skip returning user check, regenerate from scratch
     }
   ): Promise<{
     success: boolean;
@@ -112,6 +177,13 @@ export class BloomIdentitySkillV2 {
         loginUrl: string;
       };
     };
+    registration?: {
+      agentId: string;
+      apiKey: string;
+      assignedTribe: string;
+      isNew: boolean; // true if just registered, false if already registered
+    };
+    isReturningUser?: boolean;
     error?: string;
     needsManualInput?: boolean;
     manualQuestions?: string;
@@ -120,6 +192,120 @@ export class BloomIdentitySkillV2 {
       console.log(`🎴 Generating Bloom Identity for user: ${userId}`);
 
       const mode = options?.mode || ExecutionMode.AUTO;
+
+      // Step 0: Check for returning user — skip full generation if identity exists
+      const IDENTITY_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+      const storedFile = options?.forceRegenerate ? null : await loadStoredIdentityFile();
+      const storedAgentId = storedFile?.agentUserId ?? null;
+
+      if (storedAgentId) {
+        // Validate userId consistency (different user on same machine?)
+        if (storedFile?.userId && storedFile.userId !== userId) {
+          console.log(`⚠️  Different user detected (stored=${storedFile.userId}, current=${userId}), regenerating...`);
+        // Check TTL — regenerate if identity is older than 30 days
+        } else if (storedFile?.savedAt && (Date.now() - new Date(storedFile.savedAt).getTime()) > IDENTITY_TTL_MS) {
+          console.log('⏰ Identity expired (>30 days), regenerating...');
+        } else {
+          console.debug(`[agent-id] Found stored agent ID: ${storedAgentId}, checking backend...`);
+          const existing = await fetchExistingIdentity(storedAgentId);
+          const ed = existing?.identityData;
+
+          // Validate backend response has all required fields
+          if (
+            ed?.personalityType &&
+            Object.values(PersonalityType).includes(ed.personalityType as PersonalityType) &&
+            Array.isArray(ed.mainCategories) && ed.mainCategories.length > 0 &&
+            ed.tagline && ed.description
+          ) {
+            console.log(`✅ Returning user: ${ed.personalityType}`);
+
+            // Reconstruct identity from stored data
+            // Prefer raw spectrums from dimensions (pre-LDP) over top-level (post-LDP noised)
+            const rawSpectrums = ed.dimensions?.tasteSpectrums || ed.tasteSpectrums;
+            const existingIdentity: IdentityData = {
+              personalityType: ed.personalityType as PersonalityType,
+              customTagline: ed.tagline,
+              customDescription: ed.description,
+              customLongDescription: ed.longDescription,
+              mainCategories: ed.mainCategories,
+              subCategories: ed.subCategories || [],
+              dimensions: ed.dimensions,
+              tasteSpectrums: rawSpectrums,
+              strengths: ed.strengths,
+              hiddenInsight: ed.hiddenInsight,
+              aiPlaybook: ed.aiPlaybook,
+            };
+
+            // Refresh recommendations with latest signals (graceful failure)
+            const userMdSignals = parseUserMd(options?.userMdPath);
+            const merged = (userMdSignals || options?.feedback)
+              ? mergeSignals(
+                  existingIdentity.mainCategories,
+                  existingIdentity.dimensions || { conviction: 50, intuition: 50, contribution: 50 },
+                  userMdSignals,
+                  options?.feedback ?? null,
+                )
+              : null;
+            let recommendations: SkillRecommendation[] = [];
+            try {
+              recommendations = await this.recommendSkills(existingIdentity, merged);
+              console.log(`✅ Refreshed ${recommendations.length} recommendations`);
+            } catch (err) {
+              console.warn('[recommendations] failed for returning user:', err instanceof Error ? err.message : err);
+            }
+
+            // Sync discoveries
+            let discoveries: DiscoveryEntry[] = [];
+            try {
+              const syncResult = await Promise.race([
+                syncDiscoveries(storedAgentId),
+                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
+              ]);
+              discoveries = syncResult.newEntries;
+            } catch (err) {
+              console.debug('[discovery-sync] failed:', err instanceof Error ? err.message : err);
+            }
+
+            const baseUrl = process.env.DASHBOARD_URL || 'https://bloomprotocol.ai';
+            const dashboardUrl = `${baseUrl}/agents/${storedAgentId}`;
+            const tribe = getRecommendedTribe(existingIdentity.mainCategories);
+            const discoverUrl = `${baseUrl}/discover/${tribe.id}`;
+
+            // Return stored registration if available
+            const storedReg = storedFile?.agentId && storedFile?.apiKey
+              ? { agentId: storedFile.agentId, apiKey: storedFile.apiKey, assignedTribe: storedFile.assignedTribe || 'build', isNew: false }
+              : undefined;
+
+            return {
+              success: true,
+              mode: (ed.mode as 'data' | 'manual') || 'data',
+              identityData: existingIdentity,
+              recommendations,
+              discoveries,
+              dashboardUrl,
+              discoverUrl,
+              dataQuality: ed.confidence || 0,
+              isReturningUser: true,
+              dimensions: existingIdentity.dimensions,
+              registration: storedReg,
+              actions: {
+                share: {
+                  url: dashboardUrl,
+                  text: `Check out my Bloom Identity: ${existingIdentity.personalityType}! 🌸`,
+                  hashtags: ['BloomProtocol', 'BloomDiscovery', 'OpenClaw'],
+                },
+                save: {
+                  prompt: 'Save this card to your Bloom collection',
+                  registerUrl: `${baseUrl}/register?return=${encodeURIComponent(dashboardUrl + '?intent=save')}`,
+                  loginUrl: `${baseUrl}/login?return=${encodeURIComponent(dashboardUrl + '?intent=save')}`,
+                },
+              },
+            };
+          } else {
+            console.log('⚠️  Stored identity incomplete or invalid, regenerating...');
+          }
+        }
+      }
 
       // Capture raw conversation text for fingerprinting (hash only — never sent raw)
       const rawConversationText = options?.conversationText;
@@ -333,23 +519,44 @@ export class BloomIdentitySkillV2 {
         privacyVersion: 'ldp-1.0',
       };
 
+      let registration: { agentId: string; apiKey: string; assignedTribe: string; isNew: boolean } | undefined;
+
       try {
-        console.log('📝 Step 4: Saving identity with Bloom...');
+        console.log('📝 Step 4: Saving identity + registering agent...');
         const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
         const response = await fetch(`${apiBase}/x402/agent-save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             agentName: 'Bloom Discovery Agent',
-            userId,
             identityData: identityPayload,
+            platform: 'openclaw',
           }),
+          signal: AbortSignal.timeout(10000),
         });
 
         const body = await response.json();
         if (response.ok && body.data?.agentUserId) {
           agentUserId = body.data.agentUserId;
-          console.log(`✅ Identity saved! User ID: ${agentUserId}`);
+          console.log(`✅ Identity saved! Agent: ${agentUserId}`);
+
+          // Registration comes back in the same response when platform is set
+          if (body.data.apiKey && body.data.assignedTribe) {
+            registration = {
+              agentId: `agent_${agentUserId}`,
+              apiKey: body.data.apiKey,
+              assignedTribe: body.data.assignedTribe,
+              isNew: true,
+            };
+            console.log(`🔑 Registered → tribe ${body.data.assignedTribe}`);
+            await saveAgentId(agentUserId, userId, {
+              agentId: registration.agentId,
+              apiKey: registration.apiKey,
+              assignedTribe: registration.assignedTribe,
+            });
+          } else {
+            await saveAgentId(agentUserId, userId);
+          }
         } else {
           console.error(`❌ API save failed: ${response.status}`, body.error || '');
         }
@@ -378,33 +585,12 @@ export class BloomIdentitySkillV2 {
         console.log(`✅ Dashboard: ${dashboardUrl}`);
       }
 
-      // Step 5: Create curated list for recommendation discovery URL
+      // Step 5: Build discover URL (tribe-based, replaces legacy curated list)
       let discoverUrl: string | undefined;
-      if (agentUserId && recommendations.length > 0) {
-        try {
-          const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
-          const listRes = await fetch(`${apiBase}/skills/curated-list`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              agentUserId,
-              personalityType: identityData!.personalityType,
-              context: `Matched to your ${identityData!.personalityType.replace(/^The /i, '')} profile`,
-              items: recommendations.map((r: any) => ({
-                slug: r.skillId,
-                matchScore: r.matchScore,
-              })),
-            }),
-          });
-          const listBody = await listRes.json();
-          if (listRes.ok && listBody.data?.url) {
-            discoverUrl = listBody.data.url;
-            console.log(`✅ Curated list: ${discoverUrl}`);
-          }
-        } catch (e) {
-          // Non-critical — skip silently
-          console.debug('[curated-list] failed:', e instanceof Error ? e.message : e);
-        }
+      if (identityData) {
+        const tribe = getRecommendedTribe(identityData.mainCategories);
+        const baseUrl = process.env.DASHBOARD_URL || 'https://bloomprotocol.ai';
+        discoverUrl = `${baseUrl}/discover/${tribe.id}`;
       }
 
       console.log('🎉 Bloom Identity generation complete!');
@@ -430,10 +616,11 @@ export class BloomIdentitySkillV2 {
           share: shareData,
           save: dashboardUrl ? {
             prompt: 'Save this card to your Bloom collection',
-            registerUrl: `${process.env.DASHBOARD_URL || 'https://bloomprotocol.ai'}/register?return=${encodeURIComponent(dashboardUrl)}`,
-            loginUrl: `${process.env.DASHBOARD_URL || 'https://bloomprotocol.ai'}/login?return=${encodeURIComponent(dashboardUrl)}`,
+            registerUrl: `${process.env.DASHBOARD_URL || 'https://bloomprotocol.ai'}/register?return=${encodeURIComponent(dashboardUrl + '?intent=save')}`,
+            loginUrl: `${process.env.DASHBOARD_URL || 'https://bloomprotocol.ai'}/login?return=${encodeURIComponent(dashboardUrl + '?intent=save')}`,
           } : undefined,
         },
+        registration,
       };
     } catch (error) {
       console.error('❌ Error generating Bloom Identity:', error);
@@ -475,13 +662,15 @@ export class BloomIdentitySkillV2 {
 function getRecommendedTribe(categories: string[]): { id: string; name: string; tagline: string } {
   const catSet = new Set(categories.map(c => c.toLowerCase()));
 
-  if (['marketing', 'design', 'productivity'].some(c => catSet.has(c))) {
+  // Grow: marketing, design, productivity, wellness, education, lifestyle
+  if (['marketing', 'design', 'productivity', 'wellness', 'education', 'lifestyle'].some(c => catSet.has(c))) {
     return { id: 'grow', name: 'Grow', tagline: 'Content, SEO, GEO, distribution — being found, getting chosen' };
   }
+  // Raise: finance, crypto, prediction market
   if (['finance', 'crypto', 'prediction market'].some(c => catSet.has(c))) {
     return { id: 'raise', name: 'Raise', tagline: 'Agent-powered project evaluation and community signal' };
   }
-  // Default to Build for dev/agent categories
+  // Build: agent framework, context engineering, mcp ecosystem, coding assistant, ai tools, development (default)
   return { id: 'build', name: 'Build', tagline: 'From zero to production agent — setup, skills, workflows' };
 }
 
@@ -531,7 +720,7 @@ async function browseSkills(intent: { category?: string; search?: string }): Pro
   params.set('limit', '10');
   params.set('sort', 'score');
 
-  const res = await fetch(`${apiBase}/skills?${params}`);
+  const res = await fetch(`${apiBase}/skills?${params}`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`Skills API returned ${res.status}`);
   const body = await res.json() as any;
   const skills: Array<{ name: string; slug: string; description: string; stars: number; source: string; url: string }> = body.data?.skills || [];
@@ -542,7 +731,7 @@ async function browseSkills(intent: { category?: string; search?: string }): Pro
 /** Call GET /skills/categories. */
 async function fetchCategories(): Promise<string> {
   const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
-  const res = await fetch(`${apiBase}/skills/categories`);
+  const res = await fetch(`${apiBase}/skills/categories`, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw new Error(`Categories API returned ${res.status}`);
   const body = await res.json() as any;
   const categories: Array<{ name: string; count: number }> = body.data?.categories || [];
@@ -603,6 +792,8 @@ export const bloomDiscoverySkill = {
     'analyze my supporter profile',
     'create my bloom card',
     'discover my personality',
+    'regenerate my bloom identity',
+    'reset my bloom identity',
     // Browse triggers (new)
     'show me skills',
     'find skills',
@@ -649,11 +840,17 @@ export const bloomDiscoverySkill = {
     const skill = new BloomIdentitySkillV2();
 
     const manualAnswers = context.manualAnswers;
+    // Detect regeneration intent from trigger text (e.g. "regenerate my bloom identity")
+    const triggerText = context.trigger || context.message || '';
+    const wantsRegenerate = context.forceRegenerate || /\b(regenerate|redo|reset|refresh)\b/i.test(triggerText);
 
     const result = await skill.execute(context.userId, {
       mode: ExecutionMode.AUTO,
       skipShare: !context.enableShare,
       manualAnswers,
+      forceRegenerate: wantsRegenerate,
+      feedback: context.feedback,
+      userMdPath: context.userMdPath,
     });
 
     if (!result.success) {
@@ -698,10 +895,17 @@ function formatSuccessMessage(result: any): string {
 
   let msg = '';
 
-  // 1. Card link — always first
-  if (result.dashboardUrl) {
+  // 1. Card link — always first, with returning user greeting
+  if (result.isReturningUser && result.dashboardUrl) {
+    msg += `🌸 **Welcome back, ${identityData.personalityType}!**`;
+    msg += `\n🔗 ${result.dashboardUrl}?intent=save`;
+    if (result.discoveries?.length > 0) {
+      msg += `\n📊 ${result.discoveries.length} new skill${result.discoveries.length > 1 ? 's' : ''} discovered since last visit`;
+    }
+    msg += `\n`;
+  } else if (result.dashboardUrl) {
     msg += `🌸 **Your Bloom Identity Card is ready!**`;
-    msg += `\n🔗 ${result.dashboardUrl}`;
+    msg += `\n🔗 ${result.dashboardUrl}?intent=save`;
     msg += `\n`;
   } else {
     msg += `🌸 **Bloom Identity generated!**\n`;
@@ -758,11 +962,24 @@ function formatSuccessMessage(result: any): string {
     }
   }
 
-  // 8. Tribe recommendation
+  // 8. Registration status
+  if (result.registration) {
+    const reg = result.registration;
+    if (reg.isNew) {
+      msg += `\n\n🔑 **Agent registered!** Your agent is now part of the **${reg.assignedTribe.charAt(0).toUpperCase() + reg.assignedTribe.slice(1)}** tribe.`;
+      msg += `\nYour identity is saved — next time you run this skill, it'll recognize you instantly.`;
+    } else {
+      msg += `\n\n🔑 Registered agent — tribe: **${reg.assignedTribe.charAt(0).toUpperCase() + reg.assignedTribe.slice(1)}**`;
+    }
+  }
+
+  // 9. Tribe recommendation
   const tribe = getRecommendedTribe(identityData.mainCategories);
   msg += `\n\n🏛 **Your tribe: ${tribe.name}**`;
   msg += `\n${tribe.tagline}`;
-  msg += `\n→ Join: https://bloomprotocol.ai/discover/${tribe.id}`;
+  if (result.discoverUrl) {
+    msg += `\n→ Join: ${result.discoverUrl}`;
+  }
   msg += `\n→ \`clawhub install bloom-tribe-skill\``;
 
   return msg;

@@ -36,7 +36,9 @@
       "verify my setup",
       "claim my SBT",
       "claim sbt",
-      "report my usage"
+      "report my usage",
+      "regenerate my bloom identity",
+      "reset my bloom identity"
     ],
     "execution": {
       "type": "script",
@@ -93,16 +95,25 @@
       "https://api.bloomprotocol.ai",
       "https://api.bloomprotocol.ai/skills",
       "https://api.bloomprotocol.ai/skills/categories",
-      "https://api.bloomprotocol.ai/skills/curated-list",
+      "https://api.bloomprotocol.ai/x402/agent-save",
+      "https://api.bloomprotocol.ai/x402/agent/*",
       "https://api.bloomprotocol.ai/api/usecases",
-      "https://api.bloomprotocol.ai/api/claim",
-      "https://api.bloomprotocol.ai/api/metrics",
+      "https://api.github.com",
+      "https://api.pinata.cloud",
       "https://base-sepolia.blockscout.com",
       "https://base.blockscout.com",
       "https://x402.bloomprotocol.ai"
     ],
-    "filesystem": ["read", "read:~/.openclaw/skills", "write:./data"],
-    "execution": ["node", "npx"]
+    "filesystem": [
+      "read",
+      "read:~/.openclaw/skills",
+      "read:~/.openclaw/agents",
+      "read:~/.config/claude",
+      "write:~/.bloom",
+      "write:./bloom-discoveries.md",
+      "write:./.bloom-discovery-state.json"
+    ],
+    "execution": ["node", "npx", "bird"]
   },
   "installation": {
     "steps": [

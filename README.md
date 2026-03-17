@@ -126,7 +126,11 @@ npx tsx scripts/run-from-session.ts \
 ✅ **Local Differential Privacy (ε=1.0)** — Spectrum scores noised via Laplace mechanism
 ✅ **SHA-256 fingerprint** — Conversation hashed locally; only irreversible hash stored
 ✅ **Minimal transmission** — Server receives personality type + approximate scores only
-✅ **Read-only** — Never writes or modifies your files
+✅ **Minimal writes** — Only writes `~/.bloom/agent-id.json` (returning user token, 0600 perms) and `bloom-discoveries.md`. Never modifies session files or USER.md
+✅ **Atomic file writes** — Uses tmp+rename pattern to prevent corruption
+✅ **Input validation** — Regex guards on session IDs, Twitter handles, file paths, agent IDs
+✅ **No shell injection** — All external commands use `execFile` (no shell interpolation)
+✅ **Timeouts** — All network requests have 5–10s abort signals
 ✅ **Opt-in metrics** — Usage data never sent without consent
 ✅ **Open source** — Audit the algorithm yourself
 
@@ -134,6 +138,7 @@ npx tsx scripts/run-from-session.ts \
 ❌ Wallet private keys **never** transmitted
 ❌ No PII collection
 ❌ No background data collection
+❌ File reads **restricted** to user's home directory
 
 ---
 
