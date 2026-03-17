@@ -173,13 +173,27 @@ async function refreshRecommendationsInner(
       return [];
     }
 
-    // Map to internal ScoredSkill and compute personality boost
+    // Map to internal ScoredSkill and compute personality boost + engagement
     const scored: ScoredSkill[] = catalogSkills.map(s => {
       const { boost } = calculatePersonalityBoost(
         { description: s.description, categories: s.categories, stars: s.stars },
         normalizedIdentity,
       );
       const rawScore = s.autoScore || 0;
+
+      // Engagement signal: reward real usage (downloads from ClawHub, stars from GitHub)
+      // log2 scale so 10k stars ≈ 13, 1k downloads ≈ 13, avoids linear domination
+      const engagement = Math.min(
+        Math.log2(1 + (s.downloads || 0) * 10 + (s.stars || 0)) * 2,
+        20,
+      );
+
+      // Blend: autoScore × 0.65 + personalityBoost + engagement (capped at 100)
+      const finalScore = Math.min(
+        Math.round(rawScore * 0.65 + boost + engagement),
+        100,
+      );
+
       return {
         id: s.slug,
         name: s.name,
@@ -190,7 +204,7 @@ async function refreshRecommendationsInner(
         downloads: s.downloads,
         rawScore,
         personalityBoost: boost,
-        finalScore: Math.min(rawScore + boost, 100),
+        finalScore,
         creator: s.creator,
         language: s.language,
       };
@@ -208,17 +222,18 @@ async function refreshRecommendationsInner(
         normalizedIdentity,
       );
 
-      const downloadsDisplay = s.downloads >= 1000
-        ? `${(s.downloads / 1000).toFixed(1)}k`
-        : `${s.downloads}`;
+      // Show the most meaningful engagement metric
+      const engagementDisplay = s.downloads > 0
+        ? (s.downloads >= 1000 ? `${(s.downloads / 1000).toFixed(1)}k downloads` : `${s.downloads} downloads`)
+        : s.stars > 0
+          ? (s.stars >= 1000 ? `${(s.stars / 1000).toFixed(1)}k ★` : `${s.stars} ★`)
+          : 'new';
 
-      const reason = matchedCategory && matchedKeywords.length > 0
-        ? `Because you're into ${matchedCategory} — ${downloadsDisplay} downloads`
-        : matchedCategory
-          ? `Because you're into ${matchedCategory} — ${downloadsDisplay} downloads`
-          : matchedKeywords.length > 0
-            ? `Fits your ${typeName} style — ${downloadsDisplay} downloads`
-            : `Fits your ${typeName} profile — ${downloadsDisplay} downloads`;
+      const reason = matchedCategory
+        ? `Because you're into ${matchedCategory} — ${engagementDisplay}`
+        : matchedKeywords.length > 0
+          ? `Fits your ${typeName} style — ${engagementDisplay}`
+          : `Fits your ${typeName} profile — ${engagementDisplay}`;
 
       return {
         skillId: s.id,
