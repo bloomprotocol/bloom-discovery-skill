@@ -71,7 +71,7 @@ Anonymized usage reporting to improve recommendations for everyone.
 ✅ **Local analysis** — Conversation text analyzed on your machine, never uploaded
 ✅ **Local Differential Privacy (ε=1.0)** — Spectrum scores noised via Laplace mechanism before transmission
 ✅ **SHA-256 fingerprint** — Conversation hashed locally; only irreversible hash stored for dedup
-✅ **Minimal transmission** — Server receives personality type + approximate scores only
+✅ **Minimal transmission** — Server receives personality type, AI-generated descriptions, noised scores, and recommendations. No raw conversation text or personal data
 ✅ **Minimal writes** — Writes only `~/.bloom/agent-id.json` (returning user token, 0600 permissions) and `bloom-discoveries.md` (local sync log). Never modifies session files or USER.md
 ✅ **Atomic file writes** — Uses tmp+rename pattern to prevent corruption
 ✅ **User-initiated** — Only runs when you explicitly invoke the skill
