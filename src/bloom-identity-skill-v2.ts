@@ -76,7 +76,7 @@ async function saveAgentId(agentUserId: number, userId: string, extra?: Partial<
 async function fetchExistingIdentity(agentUserId: number): Promise<any | null> {
   try {
     const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
-    const res = await fetch(`${apiBase}/x402/agent/${agentUserId}`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${apiBase}/x402/agent/${agentUserId}`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) return null;
     const body = await res.json();
     return body.data || null;
@@ -111,6 +111,39 @@ export interface IdentityData {
   hiddenInsight?: HiddenPatternInsight;
   aiPlaybook?: AiPlaybook;
 }
+
+/**
+ * Display-friendly labels for consuming agents (i18n + clarity).
+ * Consuming agents (OpenClaw bot, etc.) should use these labels
+ * instead of guessing from field names.
+ */
+export const DISPLAY_LABELS = {
+  // Section headers
+  personalityType: { en: 'Personality Type', zh: '你的建造者類型' },
+  tagline: { en: 'Tagline', zh: '一句話描述' },
+  dimensions: { en: 'Core Dimensions', zh: '核心維度' },
+  tasteSpectrums: { en: 'How You Operate', zh: '你的操作風格' },
+  hiddenInsight: { en: 'Hidden Pattern', zh: '獨特發現' },
+  aiPlaybook: { en: 'Your AI Edge', zh: '你的 AI 優勢指南' },
+  recommendations: { en: 'Recommended Skills', zh: '推薦技能' },
+  strengths: { en: 'Strengths', zh: '你的強項' },
+
+  // Dimension labels
+  conviction: { en: 'Conviction', zh: '信念' },
+  intuition: { en: 'Intuition', zh: '直覺' },
+  contribution: { en: 'Contribution', zh: '社群貢獻' },
+
+  // Spectrum labels (low → high)
+  learning: { en: 'Learning', zh: '學習風格', low: { en: 'try-first', zh: '動手派' }, high: { en: 'study-first', zh: '研究派' } },
+  decision: { en: 'Decision', zh: '決策風格', low: { en: 'gut', zh: '直覺決策' }, high: { en: 'deliberate', zh: '深思熟慮' } },
+  novelty:  { en: 'Timing', zh: '採用時機', low: { en: 'pioneer', zh: '先鋒' }, high: { en: 'pragmatist', zh: '務實派' } },
+  risk:     { en: 'Focus', zh: '投入方式', low: { en: 'all-in', zh: '全力投入' }, high: { en: 'diversified', zh: '分散佈局' } },
+
+  // Playbook sub-fields
+  leverage: { en: 'Your edge', zh: '你的優勢' },
+  watchOut: { en: 'Watch out', zh: '注意事項' },
+  nextMove: { en: 'Try this', zh: '下一步行動' },
+} as const;
 
 /**
  * Execution mode
@@ -246,24 +279,29 @@ export class BloomIdentitySkillV2 {
                   options?.feedback ?? null,
                 )
               : null;
+            // Refresh recommendations + sync discoveries IN PARALLEL
             let recommendations: SkillRecommendation[] = [];
-            try {
-              recommendations = await this.recommendSkills(existingIdentity, merged);
+            let discoveries: DiscoveryEntry[] = [];
+
+            const [recsResult, discResult] = await Promise.allSettled([
+              this.recommendSkills(existingIdentity, merged),
+              Promise.race([
+                syncDiscoveries(storedAgentId),
+                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000)),
+              ]),
+            ]);
+
+            if (recsResult.status === 'fulfilled') {
+              recommendations = recsResult.value;
               console.log(`✅ Refreshed ${recommendations.length} recommendations`);
-            } catch (err) {
-              console.warn('[recommendations] failed for returning user:', err instanceof Error ? err.message : err);
+            } else {
+              console.warn('[recommendations] failed for returning user:', recsResult.reason?.message || recsResult.reason);
             }
 
-            // Sync discoveries
-            let discoveries: DiscoveryEntry[] = [];
-            try {
-              const syncResult = await Promise.race([
-                syncDiscoveries(storedAgentId),
-                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000)),
-              ]);
-              discoveries = syncResult.newEntries;
-            } catch (err) {
-              console.debug('[discovery-sync] failed:', err instanceof Error ? err.message : err);
+            if (discResult.status === 'fulfilled') {
+              discoveries = discResult.value.newEntries;
+            } else {
+              console.debug('[discovery-sync] failed:', discResult.reason?.message || discResult.reason);
             }
 
             const baseUrl = process.env.DASHBOARD_URL || 'https://bloomprotocol.ai';
@@ -283,10 +321,12 @@ export class BloomIdentitySkillV2 {
               recommendations,
               discoveries,
               dashboardUrl,
+              cardUrl: `${dashboardUrl}?view=card`,
               discoverUrl,
               dataQuality: ed.confidence || 0,
               isReturningUser: true,
               dimensions: existingIdentity.dimensions,
+              displayLabels: DISPLAY_LABELS,
               registration: storedReg,
               actions: {
                 share: {
@@ -521,26 +561,26 @@ export class BloomIdentitySkillV2 {
 
       let registration: { agentId: string; apiKey: string; assignedTribe: string; isNew: boolean } | undefined;
 
-      try {
-        console.log('📝 Step 4: Saving identity + registering agent...');
-        const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
-        const response = await fetch(`${apiBase}/x402/agent-save`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            agentName: 'Bloom Discovery Agent',
-            identityData: identityPayload,
-            platform: 'openclaw',
-          }),
-          signal: AbortSignal.timeout(10000),
-        });
+      // Step 4: Save identity + sync discoveries IN PARALLEL
+      console.log('📝 Step 4: Saving identity + registering agent...');
+      const apiBase = process.env.BLOOM_API_URL || 'https://api.bloomprotocol.ai';
 
+      // Fire both requests concurrently — don't wait for save before syncing
+      const savePromise = fetch(`${apiBase}/x402/agent-save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentName: 'Bloom Discovery Agent',
+          identityData: identityPayload,
+          platform: 'openclaw',
+        }),
+        signal: AbortSignal.timeout(6000),
+      }).then(async response => {
         const body = await response.json();
         if (response.ok && body.data?.agentUserId) {
           agentUserId = body.data.agentUserId;
           console.log(`✅ Identity saved! Agent: ${agentUserId}`);
 
-          // Registration comes back in the same response when platform is set
           if (body.data.apiKey && body.data.assignedTribe) {
             registration = {
               agentId: `agent_${agentUserId}`,
@@ -560,26 +600,26 @@ export class BloomIdentitySkillV2 {
         } else {
           console.error(`❌ API save failed: ${response.status}`, body.error || '');
         }
-      } catch (saveError) {
+      }).catch(saveError => {
         console.error('❌ Identity save failed:', saveError instanceof Error ? saveError.message : saveError);
-      }
+      });
 
-      // Sync discoveries (with 3s timeout)
+      // Discovery sync runs in parallel with save (uses previous agentId if available)
       let discoveries: DiscoveryEntry[] = [];
+      const storedIdForSync = (await loadStoredIdentityFile())?.agentUserId;
+
+      const discoverPromise = storedIdForSync
+        ? Promise.race([
+            syncDiscoveries(storedIdForSync),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000)),
+          ]).then(syncResult => { discoveries = syncResult.newEntries; })
+            .catch(err => { console.debug('[discovery-sync] failed:', err instanceof Error ? err.message : err); })
+        : Promise.resolve();
+
+      // Wait for both to finish
+      await Promise.all([savePromise, discoverPromise]);
 
       if (agentUserId) {
-        try {
-          const syncResult = await Promise.race([
-            syncDiscoveries(agentUserId),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('timeout')), 3000),
-            ),
-          ]);
-          discoveries = syncResult.newEntries;
-        } catch (err) {
-          console.debug('[discovery-sync] failed:', err instanceof Error ? err.message : err);
-        }
-
         const baseUrl = process.env.DASHBOARD_URL || 'https://bloomprotocol.ai';
         dashboardUrl = `${baseUrl}/agents/${agentUserId}`;
         console.log(`✅ Dashboard: ${dashboardUrl}`);
@@ -602,6 +642,9 @@ export class BloomIdentitySkillV2 {
         hashtags: ['BloomProtocol', 'BloomDiscovery', 'OpenClaw'],
       } : undefined;
 
+      // Card URL = lightweight embed (faster render), Dashboard URL = full page
+      const cardUrl = dashboardUrl ? `${dashboardUrl}?view=card` : undefined;
+
       return {
         success: true,
         mode: usedManualQA ? 'manual' : 'data',
@@ -609,9 +652,11 @@ export class BloomIdentitySkillV2 {
         recommendations,
         discoveries,
         dashboardUrl,
+        cardUrl,     // Lighter card-only view (faster load)
         discoverUrl,
         dataQuality,
         dimensions,
+        displayLabels: DISPLAY_LABELS,
         actions: {
           share: shareData,
           save: dashboardUrl ? {

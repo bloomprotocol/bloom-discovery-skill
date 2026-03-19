@@ -120,7 +120,7 @@ function normalizeToCanonical(categories: string[]): string[] {
 
 // ─── Pipeline timeout ────────────────────────────────────────────────────
 
-const PIPELINE_TIMEOUT_MS = 25_000;
+const PIPELINE_TIMEOUT_MS = 8_000;
 
 // ─── Main pipeline ──────────────────────────────────────────────────────
 
@@ -316,7 +316,7 @@ async function fetchCatalogSkills(): Promise<CatalogSkill[]> {
   const url = `${apiBase}/skills?sort=score&limit=200`;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10_000);
+  const timer = setTimeout(() => controller.abort(), 5_000);
 
   try {
     const res = await fetch(url, {

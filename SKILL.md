@@ -29,12 +29,12 @@ Bloom Discovery is an agent-native skill that analyzes how you work, matches you
 
 ### 1. Personality Analysis (MentalOS)
 Reads your USER.md and conversation history (~120 messages) to map your builder personality across 4 dimensions:
-- **Learning**: Try First ↔ Study First
-- **Decision**: Gut ↔ Analytical
-- **Novelty**: Early Adopter ↔ Proven First
-- **Risk**: All In ↔ Measured
+- **Learning** (學習風格): Try First ↔ Study First
+- **Decision** (決策風格): Gut ↔ Deliberate
+- **Timing** (採用時機): Pioneer ↔ Pragmatist
+- **Focus** (投入方式): All-In ↔ Diversified
 
-Outputs: Personality type (Visionary / Explorer / Cultivator / Optimizer / Innovator), custom tagline, hidden pattern insight, AI-era playbook.
+Outputs: Personality type (Visionary / Explorer / Cultivator / Optimizer / Innovator), custom tagline, hidden pattern insight, AI edge guide. Includes `displayLabels` with en/zh translations for all sections.
 
 ### 2. Use Case Discovery
 Intent-driven skill browsing. Instead of searching 13,000 skills, you describe what you want to accomplish and Bloom matches you to curated use cases — each a tested combination of skills.
