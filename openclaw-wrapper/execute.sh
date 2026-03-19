@@ -38,7 +38,7 @@ if [ ! -d "$BLOOM_SKILL_DIR" ] || [ ! -d "$BLOOM_SKILL_DIR/src" ]; then
   mkdir -p "$WORKSPACE_DIR"
 
   # Clone from canonical GitLab repository (pinned to release tag)
-  BLOOM_VERSION="v3.1.0"
+  BLOOM_VERSION="v4.0.1"
   echo "Downloading from GitLab (bloom-protocol/bloom-discovery-skill@${BLOOM_VERSION})..."
   if ! git clone --depth 1 --branch "$BLOOM_VERSION" "$BLOOM_REPO" "$BLOOM_SKILL_DIR" 2>/dev/null; then
     echo "Error: Failed to download Bloom Identity Skill"

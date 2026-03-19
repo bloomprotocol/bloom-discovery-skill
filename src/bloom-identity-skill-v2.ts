@@ -834,7 +834,7 @@ function formatCategoriesList(
 export const bloomDiscoverySkill = {
   name: 'bloom-discovery',
   description: 'Generate your personalized Bloom Identity Card, browse skills, and discover matching projects',
-  version: '4.0.0',
+  version: '4.0.1',
   aliases: ['bloom-identity'],
 
   triggers: [

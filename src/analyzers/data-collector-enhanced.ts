@@ -253,14 +253,11 @@ export class EnhancedDataCollector {
    * If no auth → skip Twitter data (fallback to conversation only)
    */
   private async checkTwitterPermission(userId: string): Promise<boolean> {
-    // TODO: Connect to OpenClaw permission API
-    // For now, assume granted (will be replaced with real check)
-    //
-    // Real implementation should be:
-    // const auth = await openclaw.permissions.checkTwitterAuth(userId);
-    // return auth.isAuthorized;
-
-    return true;
+    // Default to false — Twitter data is opt-in only.
+    // When OpenClaw ships a permissions API, replace with:
+    //   const auth = await openclaw.permissions.checkTwitterAuth(userId);
+    //   return auth.isAuthorized;
+    return false;
   }
 
   /**

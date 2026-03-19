@@ -1,6 +1,6 @@
 ---
 name: bloom-discovery
-version: 4.0.0
+version: 4.0.1
 description: >
   Agent-native discovery skill for the intent economy.
   Analyzes your MentalOS, matches use cases to your installed skills,
@@ -119,7 +119,7 @@ Anonymized usage reporting to improve recommendations for everyone.
 
 ## Technical Details
 
-- **Version**: 4.0.0
+- **Version**: 4.0.1
 - **Privacy**: LDP ε=1.0 + SHA-256 fingerprint
 - **Analysis Engine**: MentalOS spectrum (4 dimensions) + category mapping
 - **Primary Signal**: Conversation memory (~120 messages) + USER.md
@@ -131,11 +131,10 @@ Anonymized usage reporting to improve recommendations for everyone.
 ## Requirements
 
 - Node.js 18+
-- Environment variables:
-  - `JWT_SECRET` — JWT signing secret (auto-generated on first run)
-  - `DASHBOARD_URL` — Dashboard URL (default: https://bloomprotocol.ai)
+- No API keys or secrets required — the skill works out of the box
+- Optional environment variables:
   - `BLOOM_API_URL` — API URL (default: https://api.bloomprotocol.ai)
-  - `NETWORK` — Network: `base-mainnet` or `base-sepolia` (default: base-mainnet)
+  - `DASHBOARD_URL` — Dashboard URL (default: https://bloomprotocol.ai)
 
 ## Installation
 

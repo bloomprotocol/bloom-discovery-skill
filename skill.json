@@ -1,6 +1,6 @@
 {
   "name": "bloom-discovery",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Agent-native discovery skill for the intent economy. Analyzes your MentalOS, matches use cases, verifies config, claims SBT proof, and reports opt-in usage metrics.",
   "homepage": "https://bloomprotocol.ai",
   "author": "Bloom Protocol",
@@ -55,65 +55,37 @@
     "jsonwebtoken": "^9.0.2",
     "viem": "^2.0.0"
   },
-  "agentKits": [
-    {
-      "name": "web3-identity",
-      "version": "^2.0.0",
-      "source": "npm:viem",
-      "required": true,
-      "purpose": "EIP-191 signature verification, ERC-8004 identity registration, and wallet interactions"
-    }
-  ],
   "environment": {
-    "required": [
+    "required": [],
+    "optional": [
       {
-        "key": "JWT_SECRET",
-        "description": "JWT signing secret for agent authentication",
-        "example": "your_secret_key_here"
+        "key": "BLOOM_API_URL",
+        "description": "Bloom API URL (default: https://api.bloomprotocol.ai)",
+        "default": "https://api.bloomprotocol.ai"
       },
       {
         "key": "DASHBOARD_URL",
         "description": "Dashboard URL for viewing identity cards",
         "default": "https://bloomprotocol.ai"
       }
-    ],
-    "optional": [
-      {
-        "key": "BLOOM_API_URL",
-        "description": "Bloom API URL for backend integration",
-        "default": "https://api.bloomprotocol.ai"
-      },
-      {
-        "key": "NETWORK",
-        "description": "Network for agent wallet: base-mainnet or base-sepolia",
-        "default": "base-mainnet"
-      }
     ]
   },
   "permissions": {
     "network": [
-      "https://api.bloomprotocol.ai",
       "https://api.bloomprotocol.ai/skills",
       "https://api.bloomprotocol.ai/skills/categories",
       "https://api.bloomprotocol.ai/x402/agent-save",
-      "https://api.bloomprotocol.ai/x402/agent/*",
-      "https://api.bloomprotocol.ai/api/usecases",
-      "https://api.github.com",
-      "https://api.pinata.cloud",
-      "https://base-sepolia.blockscout.com",
-      "https://base.blockscout.com",
-      "https://x402.bloomprotocol.ai"
+      "https://api.bloomprotocol.ai/x402/agent/*"
     ],
     "filesystem": [
-      "read",
       "read:~/.openclaw/skills",
       "read:~/.openclaw/agents",
-      "read:~/.config/claude",
-      "write:~/.bloom",
+      "read:~/.config/claude/USER.md",
+      "write:~/.bloom/agent-id.json",
       "write:./bloom-discoveries.md",
       "write:./.bloom-discovery-state.json"
     ],
-    "execution": ["node", "npx", "bird"]
+    "execution": ["node", "npx"]
   },
   "installation": {
     "steps": [
