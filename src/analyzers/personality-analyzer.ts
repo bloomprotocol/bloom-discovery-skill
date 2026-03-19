@@ -838,27 +838,32 @@ export class PersonalityAnalyzer {
       }
     }
 
-    // 6. Boundary Dweller — conviction or intuition within ±4 of the 50 threshold (tight catch-all)
-    // Labels depend on both axes: e.g. conviction boundary → Explorer or Innovator depending on intuition
-    const convictionLow = dimensions.intuition >= 50 ? 'Explorer' : 'Innovator';
-    const convictionHigh = dimensions.intuition >= 50 ? 'Visionary' : 'Optimizer';
-    const intuitionLow = dimensions.conviction >= 50 ? 'Optimizer' : 'Innovator';
-    const intuitionHigh = dimensions.conviction >= 50 ? 'Visionary' : 'Explorer';
+    // 6. Balanced Versatility — conviction or intuition near center (45-55)
+    // Instead of confusing "X points from Type Y", highlight adaptability as a strength
+    const balancedDims: string[] = [];
+    if (Math.abs(dimensions.conviction - 50) <= 8) balancedDims.push('conviction');
+    if (Math.abs(dimensions.intuition - 50) <= 8) balancedDims.push('intuition');
 
-    const boundaryChecks = [
-      { name: 'conviction', value: dimensions.conviction, low: convictionLow, high: convictionHigh },
-      { name: 'intuition', value: dimensions.intuition, low: intuitionLow, high: intuitionHigh },
-    ];
-    for (const check of boundaryChecks) {
-      const distFromThreshold = Math.abs(check.value - 50);
-      if (distFromThreshold <= 8 && distFromThreshold > 0) {
-        const side = check.value >= 50 ? check.low : check.high;
-        return {
-          brief: `You're ${distFromThreshold} points from ${side} territory — that duality is a superpower`,
-          narrative: `Your ${check.name} score sits right at the boundary (${check.value}/100). Most people land firmly on one side, but you operate in the liminal zone — able to flex between both modes. This adaptability is rare and valuable.`,
-          patternType: 'boundary-dweller',
-        };
-      }
+    if (balancedDims.length > 0) {
+      const dimLabel = balancedDims.length === 2
+        ? 'both conviction and intuition'
+        : balancedDims[0];
+      const versatileDescriptions: Record<number, { brief: string; narrative: string }> = {
+        2: {
+          brief: 'You operate in the center of both axes — a rare generalist who can flex in any direction',
+          narrative: `Your conviction and intuition scores both sit near the midpoint. While others are locked into one quadrant, you can shift between focused specialist and broad explorer, between gut decisions and careful analysis. This versatility is rare — most people are firmly one or the other. You're the person teams call when they need someone who can adapt.`,
+        },
+        1: {
+          brief: `Your ${balancedDims[0]} sits right at the center — you can flex between both styles at will`,
+          narrative: `Your ${balancedDims[0]} score is balanced (${balancedDims[0] === 'conviction' ? dimensions.conviction : dimensions.intuition}/100), meaning you're not locked into one approach. You can switch between ${balancedDims[0] === 'conviction' ? 'deep focus and broad exploration' : 'gut instinct and careful analysis'} depending on what the situation demands. This adaptability is your edge.`,
+        },
+      };
+      const desc = versatileDescriptions[balancedDims.length] || versatileDescriptions[1];
+      return {
+        brief: desc.brief,
+        narrative: desc.narrative,
+        patternType: 'boundary-dweller', // Keep type for backwards compatibility
+      };
     }
 
     return undefined;
