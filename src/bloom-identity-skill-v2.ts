@@ -1052,7 +1052,7 @@ function getPersonalityEmoji(type: PersonalityType): string {
     [PersonalityType.THE_EXPLORER]: '💚',
     [PersonalityType.THE_CULTIVATOR]: '🩵',
     [PersonalityType.THE_OPTIMIZER]: '🧡',
-    [PersonalityType.THE_INNOVATOR]: '💙',
+    [PersonalityType.THE_INNOVATOR]: '❤️',
   };
   return emojiMap[type] || '🎴';
 }
