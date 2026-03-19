@@ -35,7 +35,6 @@ interface StoredAgent {
   savedAt?: string;
   // Agent registration (self-registration via POST /agent/register)
   agentId?: string;       // e.g. "agent_123456789"
-  apiKey?: string;        // e.g. "bk_123456789"
   assignedTribe?: string; // "build" | "raise" | "grow"
 }
 
@@ -191,6 +190,8 @@ export class BloomIdentitySkillV2 {
     recommendations?: SkillRecommendation[];
     discoveries?: DiscoveryEntry[];
     dashboardUrl?: string;
+    cardUrl?: string;     // Lightweight card-only view
+    claimUrl?: string;    // Direct URL to save card via email registration
     discoverUrl?: string;
     dataQuality?: number;
     dimensions?: {
@@ -198,6 +199,7 @@ export class BloomIdentitySkillV2 {
       intuition: number;
       contribution: number;
     };
+    displayLabels?: typeof DISPLAY_LABELS;
     actions?: {
       share?: {
         url: string;
@@ -206,13 +208,13 @@ export class BloomIdentitySkillV2 {
       };
       save?: {
         prompt: string;
+        claimUrl: string;   // Dashboard with ?intent=save — auto-opens email capture
         registerUrl: string;
         loginUrl: string;
       };
     };
     registration?: {
       agentId: string;
-      apiKey: string;
       assignedTribe: string;
       isNew: boolean; // true if just registered, false if already registered
     };
@@ -310,9 +312,11 @@ export class BloomIdentitySkillV2 {
             const discoverUrl = `${baseUrl}/discover/${tribe.id}`;
 
             // Return stored registration if available
-            const storedReg = storedFile?.agentId && storedFile?.apiKey
-              ? { agentId: storedFile.agentId, apiKey: storedFile.apiKey, assignedTribe: storedFile.assignedTribe || 'build', isNew: false }
+            const storedReg = storedFile?.agentId
+              ? { agentId: storedFile.agentId, assignedTribe: storedFile.assignedTribe || 'build', isNew: false }
               : undefined;
+
+            const claimUrl = `${dashboardUrl}?intent=save`;
 
             return {
               success: true,
@@ -322,6 +326,7 @@ export class BloomIdentitySkillV2 {
               discoveries,
               dashboardUrl,
               cardUrl: `${dashboardUrl}?view=card`,
+              claimUrl,
               discoverUrl,
               dataQuality: ed.confidence || 0,
               isReturningUser: true,
@@ -335,9 +340,10 @@ export class BloomIdentitySkillV2 {
                   hashtags: ['BloomProtocol', 'BloomDiscovery', 'OpenClaw'],
                 },
                 save: {
-                  prompt: 'Save this card to your Bloom collection',
-                  registerUrl: `${baseUrl}/register?return=${encodeURIComponent(dashboardUrl + '?intent=save')}`,
-                  loginUrl: `${baseUrl}/login?return=${encodeURIComponent(dashboardUrl + '?intent=save')}`,
+                  prompt: 'Register with email to claim your Bloom Identity Card',
+                  claimUrl,
+                  registerUrl: `${baseUrl}/register?return=${encodeURIComponent(claimUrl)}`,
+                  loginUrl: `${baseUrl}/login?return=${encodeURIComponent(claimUrl)}`,
                 },
               },
             };
@@ -559,7 +565,7 @@ export class BloomIdentitySkillV2 {
         privacyVersion: 'ldp-1.0',
       };
 
-      let registration: { agentId: string; apiKey: string; assignedTribe: string; isNew: boolean } | undefined;
+      let registration: { agentId: string; assignedTribe: string; isNew: boolean } | undefined;
 
       // Step 4: Save identity + sync discoveries IN PARALLEL
       console.log('📝 Step 4: Saving identity + registering agent...');
@@ -581,17 +587,15 @@ export class BloomIdentitySkillV2 {
           agentUserId = body.data.agentUserId;
           console.log(`✅ Identity saved! Agent: ${agentUserId}`);
 
-          if (body.data.apiKey && body.data.assignedTribe) {
+          if (body.data.assignedTribe) {
             registration = {
               agentId: `agent_${agentUserId}`,
-              apiKey: body.data.apiKey,
               assignedTribe: body.data.assignedTribe,
               isNew: true,
             };
             console.log(`🔑 Registered → tribe ${body.data.assignedTribe}`);
             await saveAgentId(agentUserId, userId, {
               agentId: registration.agentId,
-              apiKey: registration.apiKey,
               assignedTribe: registration.assignedTribe,
             });
           } else {
@@ -644,6 +648,7 @@ export class BloomIdentitySkillV2 {
 
       // Card URL = lightweight embed (faster render), Dashboard URL = full page
       const cardUrl = dashboardUrl ? `${dashboardUrl}?view=card` : undefined;
+      const claimUrl = dashboardUrl ? `${dashboardUrl}?intent=save` : undefined;
 
       return {
         success: true,
@@ -653,16 +658,18 @@ export class BloomIdentitySkillV2 {
         discoveries,
         dashboardUrl,
         cardUrl,     // Lighter card-only view (faster load)
+        claimUrl,    // Direct URL to email registration + card save
         discoverUrl,
         dataQuality,
         dimensions,
         displayLabels: DISPLAY_LABELS,
         actions: {
           share: shareData,
-          save: dashboardUrl ? {
-            prompt: 'Save this card to your Bloom collection',
-            registerUrl: `${process.env.DASHBOARD_URL || 'https://bloomprotocol.ai'}/register?return=${encodeURIComponent(dashboardUrl + '?intent=save')}`,
-            loginUrl: `${process.env.DASHBOARD_URL || 'https://bloomprotocol.ai'}/login?return=${encodeURIComponent(dashboardUrl + '?intent=save')}`,
+          save: claimUrl ? {
+            prompt: 'Register with email to claim your Bloom Identity Card',
+            claimUrl,
+            registerUrl: `${process.env.DASHBOARD_URL || 'https://bloomprotocol.ai'}/register?return=${encodeURIComponent(claimUrl)}`,
+            loginUrl: `${process.env.DASHBOARD_URL || 'https://bloomprotocol.ai'}/login?return=${encodeURIComponent(claimUrl)}`,
           } : undefined,
         },
         registration,
@@ -943,14 +950,14 @@ function formatSuccessMessage(result: any): string {
   // 1. Card link — always first, with returning user greeting
   if (result.isReturningUser && result.dashboardUrl) {
     msg += `🌸 **Welcome back, ${identityData.personalityType}!**`;
-    msg += `\n🔗 ${result.dashboardUrl}?intent=save`;
+    msg += `\n🔗 ${result.dashboardUrl}`;
     if (result.discoveries?.length > 0) {
       msg += `\n📊 ${result.discoveries.length} new skill${result.discoveries.length > 1 ? 's' : ''} discovered since last visit`;
     }
     msg += `\n`;
   } else if (result.dashboardUrl) {
     msg += `🌸 **Your Bloom Identity Card is ready!**`;
-    msg += `\n🔗 ${result.dashboardUrl}?intent=save`;
+    msg += `\n🔗 ${result.dashboardUrl}`;
     msg += `\n`;
   } else {
     msg += `🌸 **Bloom Identity generated!**\n`;
@@ -1007,25 +1014,26 @@ function formatSuccessMessage(result: any): string {
     }
   }
 
-  // 8. Registration status
-  if (result.registration) {
-    const reg = result.registration;
-    if (reg.isNew) {
-      msg += `\n\n🔑 **Agent registered!** Your agent is now part of the **${reg.assignedTribe.charAt(0).toUpperCase() + reg.assignedTribe.slice(1)}** tribe.`;
-      msg += `\nYour identity is saved — next time you run this skill, it'll recognize you instantly.`;
-    } else {
-      msg += `\n\n🔑 Registered agent — tribe: **${reg.assignedTribe.charAt(0).toUpperCase() + reg.assignedTribe.slice(1)}**`;
-    }
+  // 8. Email registration CTA — the key conversion action
+  if (result.claimUrl) {
+    msg += `\n\n📧 **Claim your card** — register with email to save it to your Bloom collection:`;
+    msg += `\n→ ${result.claimUrl}`;
   }
 
-  // 9. Tribe recommendation
-  const tribe = getRecommendedTribe(identityData.mainCategories);
-  msg += `\n\n🏛 **Your tribe: ${tribe.name}**`;
-  msg += `\n${tribe.tagline}`;
-  if (result.discoverUrl) {
-    msg += `\n→ Join: ${result.discoverUrl}`;
+  // 9. Registration status
+  if (result.registration) {
+    const reg = result.registration;
+    const tribeName = reg.assignedTribe.charAt(0).toUpperCase() + reg.assignedTribe.slice(1);
+    if (reg.isNew) {
+      msg += `\n\n🏛 **Tribe: ${tribeName}** — your agent is registered and will be recognized next time.`;
+    } else {
+      msg += `\n\n🏛 Tribe: **${tribeName}**`;
+    }
+  } else {
+    // Still show tribe recommendation even without registration
+    const tribe = getRecommendedTribe(identityData.mainCategories);
+    msg += `\n\n🏛 **Your tribe: ${tribe.name}** — ${tribe.tagline}`;
   }
-  msg += `\n→ \`clawhub install bloom-tribe-skill\``;
 
   return msg;
 }
