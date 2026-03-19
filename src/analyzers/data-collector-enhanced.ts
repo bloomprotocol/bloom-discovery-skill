@@ -261,70 +261,23 @@ export class EnhancedDataCollector {
   }
 
   /**
-   * Collect comprehensive Twitter/X data
+   * Collect Twitter/X data — disabled by default (opt-in via permissions API).
+   * Returns empty data; Twitter integration removed pending OpenClaw permissions API.
    */
-  private async collectTwitterData(userId: string): Promise<TwitterData> {
-    // Use bird CLI to fetch real Twitter data
-    const { fetchTwitterProfile, fetchTwitterFollowing, analyzeInteractions } = await import('../integrations/bird-twitter');
-
-    try {
-      // Fetch profile with recent tweets
-      const profile = await fetchTwitterProfile(userId);
-
-      if (!profile) {
-        console.warn(`⚠️  No Twitter profile found for ${userId}`);
-        return {
-          bio: '',
-          following: [],
-          tweets: [],
-          interactions: {
-            likes: [],
-            retweets: [],
-            replies: [],
-          },
-        };
-      }
-
-      // Fetch following list
-      const followingData = await fetchTwitterFollowing(userId, 100);
-      const following = followingData?.handles || [];
-
-      // Analyze interactions from tweets
-      const interactions = analyzeInteractions(profile.tweets);
-
-      return {
-        bio: profile.bio,
-        following,
-        tweets: profile.tweets,
-        interactions,
-      };
-    } catch (error) {
-      console.error(`❌ Failed to fetch Twitter data for ${userId}:`, error);
-      // Return empty data rather than failing
-      return {
-        bio: '',
-        following: [],
-        tweets: [],
-        interactions: {
-          likes: [],
-          retweets: [],
-          replies: [],
-        },
-      };
-    }
+  private async collectTwitterData(_userId: string): Promise<TwitterData> {
+    return {
+      bio: '',
+      following: [],
+      tweets: [],
+      interactions: { likes: [], retweets: [], replies: [] },
+    };
   }
 
   /**
-   * Collect comprehensive Wallet data
-   *
-   * ⚠️ OPT-IN ONLY - Not used in default personality analysis
-   *
-   * Stub — wallet management removed. Agents bring their own wallet via Coinbase AgentKit.
-   * Returns empty data; wallet address is passed in externally if available.
+   * Collect Wallet data — stub, returns empty data.
+   * Wallet address is passed in externally if available.
    */
   private async collectWalletData(_userId: string): Promise<WalletData> {
-    // Wallet management removed — agents bring their own wallet via Coinbase AgentKit.
-    // This method returns empty data; wallet address is passed in externally if available.
     try {
       return {
         address: '',
